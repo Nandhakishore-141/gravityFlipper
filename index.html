@@ -8,7 +8,12 @@
 </head>
 <body>
   <main class="game" id="game" aria-label="Gravity Flipper playground">
+    <div class="boundary top" aria-hidden="true"></div>
+    <div class="boundary bottom" aria-hidden="true"></div>
+    <div class="spikes" id="spikesTop" aria-hidden="true"></div>
+    <div class="spikes" id="spikesBottom" aria-hidden="true"></div>
     <div class="box" id="box"></div>
+    <p class="hint">Press Space to flip gravity</p>
   </main>
 
   <script src="index.js"></script>

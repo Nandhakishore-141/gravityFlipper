@@ -32,12 +32,58 @@ body {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
+.boundary {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.boundary.top {
+  top: 14px;
+}
+
+.boundary.bottom {
+  bottom: 14px;
+}
+
 .box {
   position: absolute;
-  left: 24px;
   width: 42px;
   height: 42px;
   border-radius: 8px;
   background: linear-gradient(160deg, #53f5ff, #2ea8ff);
   box-shadow: 0 6px 16px rgba(83, 245, 255, 0.38);
+}
+
+.box.hit {
+  background: linear-gradient(160deg, #ff8e8e, #ff4a4a);
+  box-shadow: 0 6px 16px rgba(255, 74, 74, 0.38);
+}
+
+.spike {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(180deg, #ff7a7a, #d51111);
+}
+
+#spikesBottom .spike {
+  bottom: 14px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+#spikesTop .spike {
+  top: 14px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.hint {
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
 }
