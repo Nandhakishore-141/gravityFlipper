@@ -5,16 +5,208 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gravity Flipper</title>
   <link rel="stylesheet" href="index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <main class="game" id="game" aria-label="Gravity Flipper playground">
-    <div class="boundary top" aria-hidden="true"></div>
-    <div class="boundary bottom" aria-hidden="true"></div>
-    <div class="spikes" id="spikesTop" aria-hidden="true"></div>
-    <div class="spikes" id="spikesBottom" aria-hidden="true"></div>
-    <div class="box" id="box"></div>
-    <p class="hint">Press Space to flip gravity</p>
+  <!-- Animated Background -->
+  <div class="bg-particles" id="bgParticles"></div>
+  
+  <!-- Level Select Screen (Home Page) -->
+  <div class="screen level-screen active" id="levelScreen">
+    <div class="level-header">
+      <div class="logo-mini">
+        <h1 class="game-logo-small">GRAVITY<span>FLIPPER</span></h1>
+      </div>
+      <div class="header-stats">
+        <div class="mini-stat">
+          <span class="mini-stat-icon">🏆</span>
+          <span class="mini-stat-value" id="menuHighScore">0</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-icon">📏</span>
+          <span class="mini-stat-value" id="totalDistance">0m</span>
+        </div>
+      </div>
+      <button class="settings-icon-btn" id="settingsBtn">⚙</button>
+    </div>
+    <p class="level-hint">Select a level to play</p>
+    <div class="level-grid" id="levelGrid"></div>
+  </div>
+
+  <!-- Settings Screen -->
+  <div class="screen settings-screen" id="settingsScreen">
+    <div class="screen-header">
+      <button class="back-btn" id="settingsBackBtn">← BACK</button>
+      <h2 class="screen-title">SETTINGS</h2>
+      <div class="header-spacer"></div>
+    </div>
+    <div class="settings-content">
+      <div class="setting-item">
+        <span class="setting-label">Sound Effects</span>
+        <button class="toggle-btn active" id="soundToggle">ON</button>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">Music</span>
+        <button class="toggle-btn active" id="musicToggle">ON</button>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">Particles</span>
+        <button class="toggle-btn active" id="particlesToggle">ON</button>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">Screen Shake</span>
+        <button class="toggle-btn active" id="shakeToggle">ON</button>
+      </div>
+      <div class="setting-divider"></div>
+      <div class="setting-item">
+        <span class="setting-label">Reset Progress</span>
+        <button class="danger-btn" id="resetBtn">RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <main class="screen game-screen" id="gameScreen">
+    <div class="game" id="game" aria-label="Gravity Flipper playground">
+      <div class="boundary top" aria-hidden="true"></div>
+      <div class="boundary bottom" aria-hidden="true"></div>
+      <div class="spikes" id="spikesTop" aria-hidden="true"></div>
+      <div class="spikes" id="spikesBottom" aria-hidden="true"></div>
+      <div class="walls" id="walls" aria-hidden="true"></div>
+      <div class="collectibles" id="collectibles" aria-hidden="true"></div>
+      <div class="portals" id="portals" aria-hidden="true"></div>
+      <div class="powerups" id="powerups" aria-hidden="true"></div>
+      <div class="box-wrap" id="boxWrap">
+        <div class="box" id="box">
+          <div class="box-trail" id="boxTrail"></div>
+        </div>
+      </div>
+      
+      <!-- Game HUD -->
+      <div class="game-hud">
+        <div class="hud-left">
+          <button class="pause-btn" id="pauseBtn">❚❚</button>
+          <div class="level-indicator">
+            <span class="level-label">LEVEL</span>
+            <span class="level-number" id="currentLevel">1</span>
+          </div>
+        </div>
+        <div class="hud-center">
+          <div class="score-display">
+            <div class="score-icon">💎</div>
+            <div class="score-value" id="scoreDisplay">0</div>
+          </div>
+          <div class="combo-display hidden" id="comboDisplay">
+            <span class="combo-text">COMBO</span>
+            <span class="combo-value" id="comboValue">x2</span>
+          </div>
+        </div>
+        <div class="hud-right">
+          <div class="distance-display">
+            <span class="distance-icon">📏</span>
+            <span class="distance-value" id="distanceDisplay">0</span>
+            <span class="distance-unit">m</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="speed-display">
+            <div class="speed-bar-container">
+              <div class="speed-bar-fill" id="speedBarFill"></div>
+            </div>
+            <div class="speed-text">
+              <span class="speed-value" id="speedValue">0</span>
+              <span class="speed-unit">MPH</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Powerup Indicator -->
+      <div class="powerup-active hidden" id="powerupActive">
+        <span class="powerup-icon" id="powerupIcon">🛡</span>
+        <div class="powerup-timer" id="powerupTimer"></div>
+      </div>
+
+      <!-- Game Messages -->
+      <div class="game-message hidden" id="gameMessage">
+        <span class="message-text" id="messageText">LEVEL UP!</span>
+      </div>
+    </div>
   </main>
+
+  <!-- Pause Screen -->
+  <div class="overlay hidden" id="pauseOverlay">
+    <div class="pause-modal">
+      <h2 class="pause-title">PAUSED</h2>
+      <div class="pause-stats">
+        <div class="pause-stat">
+          <span class="pause-label">Score</span>
+          <span class="pause-value" id="pauseScore">0</span>
+        </div>
+        <div class="pause-stat">
+          <span class="pause-label">Level</span>
+          <span class="pause-value" id="pauseLevel">1</span>
+        </div>
+      </div>
+      <div class="pause-buttons">
+        <button class="pause-btn-action primary" id="resumeBtn">▶ RESUME</button>
+        <button class="pause-btn-action" id="restartBtn">↺ RESTART</button>
+        <button class="pause-btn-action" id="quitBtn">✕ QUIT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div class="overlay hidden" id="gameOverOverlay">
+    <div class="gameover-modal">
+      <h2 class="gameover-title">GAME OVER</h2>
+      <div class="gameover-stats">
+        <div class="go-stat">
+          <span class="go-label">Score</span>
+          <span class="go-value" id="finalScore">0</span>
+        </div>
+        <div class="go-stat">
+          <span class="go-label">Distance</span>
+          <span class="go-value" id="finalDistance">0m</span>
+        </div>
+        <div class="go-stat">
+          <span class="go-label">Best</span>
+          <span class="go-value" id="bestScore">0</span>
+        </div>
+      </div>
+      <div class="gameover-buttons">
+        <button class="go-btn primary" id="retryBtn">↺ RETRY</button>
+        <button class="go-btn" id="menuBtn">≡ MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Complete Screen -->
+  <div class="overlay hidden" id="levelCompleteOverlay">
+    <div class="levelcomplete-modal">
+      <h2 class="levelcomplete-title">LEVEL COMPLETE!</h2>
+      <div class="levelcomplete-stats">
+        <div class="lc-stat">
+          <span class="lc-label">Score</span>
+          <span class="lc-value" id="lcScore">0</span>
+        </div>
+        <div class="lc-stat">
+          <span class="lc-label">Distance</span>
+          <span class="lc-value" id="lcDistance">0m</span>
+        </div>
+        <div class="lc-stat">
+          <span class="lc-label">Time</span>
+          <span class="lc-value" id="lcTime">0:00</span>
+        </div>
+      </div>
+      <div class="levelcomplete-buttons">
+        <button class="lc-btn primary" id="nextLevelBtn">→ NEXT LEVEL</button>
+        <button class="lc-btn" id="replayBtn">↺ REPLAY</button>
+        <button class="lc-btn" id="lcMenuBtn">≡ MENU</button>
+      </div>
+    </div>
+  </div>
 
   <script src="index.js"></script>
 </body>
