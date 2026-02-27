@@ -285,8 +285,9 @@ function renderLevelGrid() {
     const card = document.createElement('div');
     card.className = 'level-card';
     
-    const isUnlocked = gameState.unlockedLevels.includes(level.id);
     const isCompleted = gameState.levelCompleted[level.id] || false;
+    // A level is unlocked if it's in unlockedLevels OR if it's been completed
+    const isUnlocked = gameState.unlockedLevels.includes(level.id) || isCompleted;
     const isCurrent = level.id === Math.max(...gameState.unlockedLevels);
     
     if (!isUnlocked) {
@@ -305,7 +306,14 @@ function renderLevelGrid() {
         ${isCompleted ? '<span class="level-check">✓</span>' : ''}
       `;
       
-      card.addEventListener('click', () => startLevel(level.id));
+      // Add both click and touch support for level selection
+      const handleLevelSelect = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startLevel(level.id);
+      };
+      card.addEventListener('click', handleLevelSelect);
+      card.addEventListener('touchend', handleLevelSelect);
     }
     
     levelGrid.appendChild(card);
@@ -922,6 +930,11 @@ function levelComplete() {
   // Mark level as completed
   gameState.levelCompleted[gameState.currentLevel] = true;
   
+  // Ensure current level is in unlockedLevels (safeguard)
+  if (!gameState.unlockedLevels.includes(gameState.currentLevel)) {
+    gameState.unlockedLevels.push(gameState.currentLevel);
+  }
+  
   // Update total distance
   gameState.totalDistance += currentDistance;
   
@@ -1039,12 +1052,20 @@ function restartLevel() {
 }
 
 function quitToMenu() {
+  // Hide all overlays first
   pauseOverlay.classList.add('hidden');
   gameOverOverlay.classList.add('hidden');
   levelCompleteOverlay.classList.add('hidden');
+  
+  // Stop the game completely
   isGameRunning = false;
-  renderLevelGrid();
-  updateHomeStats();
+  isPaused = false;
+  
+  // Remove active class from game screen to fully hide it
+  gameScreen.classList.remove('active');
+  
+  // Save any progress and show level selection
+  saveGameState();
   showScreen('levels');
 }
 
@@ -1104,6 +1125,7 @@ function render() {
 // ==================== GAME LOOP ====================
 function loop(timestamp) {
   if (!isGameRunning || isPaused) return;
+  
   
   if (!lastTime) {
     lastTime = timestamp;
@@ -1205,6 +1227,17 @@ nextLevelBtn.addEventListener('click', nextLevel);
 replayBtn.addEventListener('click', restartLevel);
 lcMenuBtn.addEventListener('click', quitToMenu);
 
+// Touch support for buttons (ensures mobile compatibility)
+pauseBtn.addEventListener('touchend', (e) => { e.preventDefault(); pauseGame(); });
+resumeBtn.addEventListener('touchend', (e) => { e.preventDefault(); resumeGame(); });
+restartBtn.addEventListener('touchend', (e) => { e.preventDefault(); restartLevel(); });
+quitBtn.addEventListener('touchend', (e) => { e.preventDefault(); quitToMenu(); });
+retryBtn.addEventListener('touchend', (e) => { e.preventDefault(); restartLevel(); });
+menuBtn.addEventListener('touchend', (e) => { e.preventDefault(); quitToMenu(); });
+nextLevelBtn.addEventListener('touchend', (e) => { e.preventDefault(); nextLevel(); });
+replayBtn.addEventListener('touchend', (e) => { e.preventDefault(); restartLevel(); });
+lcMenuBtn.addEventListener('touchend', (e) => { e.preventDefault(); quitToMenu(); });
+
 // Keyboard controls
 function isSpaceInput(event) {
   return event.code === "Space" || event.key === " " || event.key === "Spacebar";
@@ -1249,7 +1282,7 @@ game.addEventListener("pointerdown", (e) => {
 // Window resize
 window.addEventListener("resize", resizeGame);
 
-// ==================== INITIALIZATION ====================
+// ==================== INITIALIZATION ==================== 
 loadGameState();
 createBackgroundParticles();
 showScreen('levels');

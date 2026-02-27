@@ -133,80 +133,80 @@
         <span class="message-text" id="messageText">LEVEL UP!</span>
       </div>
     </div>
+
+    <!-- Pause Screen (inside game screen) -->
+    <div class="overlay hidden" id="pauseOverlay">
+      <div class="pause-modal">
+        <h2 class="pause-title">PAUSED</h2>
+        <div class="pause-stats">
+          <div class="pause-stat">
+            <span class="pause-label">Score</span>
+            <span class="pause-value" id="pauseScore">0</span>
+          </div>
+          <div class="pause-stat">
+            <span class="pause-label">Level</span>
+            <span class="pause-value" id="pauseLevel">1</span>
+          </div>
+        </div>
+        <div class="pause-buttons">
+          <button class="pause-btn-action primary" id="resumeBtn">▶ RESUME</button>
+          <button class="pause-btn-action" id="restartBtn">↺ RESTART</button>
+          <button class="pause-btn-action" id="quitBtn">✕ QUIT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen (inside game screen) -->
+    <div class="overlay hidden" id="gameOverOverlay">
+      <div class="gameover-modal">
+        <h2 class="gameover-title">GAME OVER</h2>
+        <div class="gameover-stats">
+          <div class="go-stat">
+            <span class="go-label">Score</span>
+            <span class="go-value" id="finalScore">0</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Distance</span>
+            <span class="go-value" id="finalDistance">0m</span>
+          </div>
+          <div class="go-stat">
+            <span class="go-label">Best</span>
+            <span class="go-value" id="bestScore">0</span>
+          </div>
+        </div>
+        <div class="gameover-buttons">
+          <button class="go-btn primary" id="retryBtn">↺ RETRY</button>
+          <button class="go-btn" id="menuBtn">≡ MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Complete Screen (inside game screen) -->
+    <div class="overlay hidden" id="levelCompleteOverlay">
+      <div class="levelcomplete-modal">
+        <h2 class="levelcomplete-title">LEVEL COMPLETE!</h2>
+        <div class="levelcomplete-stats">
+          <div class="lc-stat">
+            <span class="lc-label">Score</span>
+            <span class="lc-value" id="lcScore">0</span>
+          </div>
+          <div class="lc-stat">
+            <span class="lc-label">Distance</span>
+            <span class="lc-value" id="lcDistance">0m</span>
+          </div>
+          <div class="lc-stat">
+            <span class="lc-label">Time</span>
+            <span class="lc-value" id="lcTime">0:00</span>
+          </div>
+        </div>
+        <div class="levelcomplete-buttons">
+          <button class="lc-btn primary" id="nextLevelBtn">→ NEXT LEVEL</button>
+          <button class="lc-btn" id="replayBtn">↺ REPLAY</button>
+          <button class="lc-btn" id="lcMenuBtn">≡ MENU</button>
+        </div>
+      </div>
+    </div>
   </main>
-
-  <!-- Pause Screen -->
-  <div class="overlay hidden" id="pauseOverlay">
-    <div class="pause-modal">
-      <h2 class="pause-title">PAUSED</h2>
-      <div class="pause-stats">
-        <div class="pause-stat">
-          <span class="pause-label">Score</span>
-          <span class="pause-value" id="pauseScore">0</span>
-        </div>
-        <div class="pause-stat">
-          <span class="pause-label">Level</span>
-          <span class="pause-value" id="pauseLevel">1</span>
-        </div>
-      </div>
-      <div class="pause-buttons">
-        <button class="pause-btn-action primary" id="resumeBtn">▶ RESUME</button>
-        <button class="pause-btn-action" id="restartBtn">↺ RESTART</button>
-        <button class="pause-btn-action" id="quitBtn">✕ QUIT</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Game Over Screen -->
-  <div class="overlay hidden" id="gameOverOverlay">
-    <div class="gameover-modal">
-      <h2 class="gameover-title">GAME OVER</h2>
-      <div class="gameover-stats">
-        <div class="go-stat">
-          <span class="go-label">Score</span>
-          <span class="go-value" id="finalScore">0</span>
-        </div>
-        <div class="go-stat">
-          <span class="go-label">Distance</span>
-          <span class="go-value" id="finalDistance">0m</span>
-        </div>
-        <div class="go-stat">
-          <span class="go-label">Best</span>
-          <span class="go-value" id="bestScore">0</span>
-        </div>
-      </div>
-      <div class="gameover-buttons">
-        <button class="go-btn primary" id="retryBtn">↺ RETRY</button>
-        <button class="go-btn" id="menuBtn">≡ MENU</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Level Complete Screen -->
-  <div class="overlay hidden" id="levelCompleteOverlay">
-    <div class="levelcomplete-modal">
-      <h2 class="levelcomplete-title">LEVEL COMPLETE!</h2>
-      <div class="levelcomplete-stats">
-        <div class="lc-stat">
-          <span class="lc-label">Score</span>
-          <span class="lc-value" id="lcScore">0</span>
-        </div>
-        <div class="lc-stat">
-          <span class="lc-label">Distance</span>
-          <span class="lc-value" id="lcDistance">0m</span>
-        </div>
-        <div class="lc-stat">
-          <span class="lc-label">Time</span>
-          <span class="lc-value" id="lcTime">0:00</span>
-        </div>
-      </div>
-      <div class="levelcomplete-buttons">
-        <button class="lc-btn primary" id="nextLevelBtn">→ NEXT LEVEL</button>
-        <button class="lc-btn" id="replayBtn">↺ REPLAY</button>
-        <button class="lc-btn" id="lcMenuBtn">≡ MENU</button>
-      </div>
-    </div>
-  </div>
 
   <script src="index.js"></script>
 </body>
