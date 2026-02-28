@@ -11,7 +11,6 @@ const spikesTopContainer = document.getElementById("spikesTop");
 const spikesBottomContainer = document.getElementById("spikesBottom");
 const wallsContainer = document.getElementById("walls");
 const collectiblesContainer = document.getElementById("collectibles");
-const powerupsContainer = document.getElementById("powerups");
 
 // HUD Elements
 const scoreDisplay = document.getElementById("scoreDisplay");
@@ -22,9 +21,6 @@ const progressFill = document.getElementById("progressFill");
 const speedBarFill = document.getElementById("speedBarFill");
 const speedValue = document.getElementById("speedValue");
 const distanceDisplay = document.getElementById("distanceDisplay");
-const powerupActive = document.getElementById("powerupActive");
-const powerupIcon = document.getElementById("powerupIcon");
-const powerupTimer = document.getElementById("powerupTimer");
 const gameMessage = document.getElementById("gameMessage");
 const messageText = document.getElementById("messageText");
 
@@ -36,12 +32,39 @@ const settingsBackBtn = document.getElementById("settingsBackBtn");
 const levelGrid = document.getElementById("levelGrid");
 
 // Settings Elements
-const soundToggle = document.getElementById("soundToggle");
-const musicToggle = document.getElementById("musicToggle");
+const soundVolume = document.getElementById("soundVolume");
+const soundValue = document.getElementById("soundValue");
+const soundIcon = document.getElementById("soundIcon");
+const musicVolume = document.getElementById("musicVolume");
+const musicValue = document.getElementById("musicValue");
+const musicIcon = document.getElementById("musicIcon");
 const particlesToggle = document.getElementById("particlesToggle");
 const shakeToggle = document.getElementById("shakeToggle");
 const resetBtn = document.getElementById("resetBtn");
-const testSoundBtn = document.getElementById("testSoundBtn");
+
+// Store Elements
+const storeScreen = document.getElementById("storeScreen");
+const storeBtn = document.getElementById("storeBtn");
+const storeBackBtn = document.getElementById("storeBackBtn");
+const colorGrid = document.getElementById("colorGrid");
+const previewBox = document.getElementById("previewBox");
+const previewName = document.getElementById("previewName");
+
+// Available Colors
+const BOX_COLORS = [
+  { id: 'cyan', name: 'Cyan', color: '#00d4ff', glow: 'rgba(0, 212, 255, 0.8)' },
+  { id: 'pink', name: 'Pink', color: '#ff69b4', glow: 'rgba(255, 105, 180, 0.8)' },
+  { id: 'green', name: 'Lime', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.8)' },
+  { id: 'orange', name: 'Orange', color: '#ff8c00', glow: 'rgba(255, 140, 0, 0.8)' },
+  { id: 'purple', name: 'Purple', color: '#a855f7', glow: 'rgba(168, 85, 247, 0.8)' },
+  { id: 'red', name: 'Red', color: '#ff4444', glow: 'rgba(255, 68, 68, 0.8)' },
+  { id: 'yellow', name: 'Yellow', color: '#ffdd00', glow: 'rgba(255, 221, 0, 0.8)' },
+  { id: 'white', name: 'White', color: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)' },
+  { id: 'gold', name: 'Gold', color: '#ffd700', glow: 'rgba(255, 215, 0, 0.8)' },
+  { id: 'teal', name: 'Teal', color: '#20b2aa', glow: 'rgba(32, 178, 170, 0.8)' },
+  { id: 'coral', name: 'Coral', color: '#ff7f50', glow: 'rgba(255, 127, 80, 0.8)' },
+  { id: 'mint', name: 'Mint', color: '#98fb98', glow: 'rgba(152, 251, 152, 0.8)' }
+];
 
 // Overlay Elements
 const pauseOverlay = document.getElementById("pauseOverlay");
@@ -97,9 +120,10 @@ let gameState = {
   totalDistance: 0,
   levelCompleted: {},
   unlockedLevels: [1],
+  selectedColor: 'cyan',
   settings: {
-    sound: true,
-    music: true,
+    soundVolume: 100,
+    musicVolume: 100,
     particles: true,
     screenShake: true
   }
@@ -123,7 +147,6 @@ let cameraX = 0;
 let farthestSpikeX = 620;
 let farthestWallX = 1500;
 let farthestCollectibleX = 400;
-let farthestPowerupX = 2000;
 let lastTime = 0;
 let flipped = false;
 let runElapsedMs = 0;
@@ -133,13 +156,8 @@ let combo = 0;
 let comboTimeout = null;
 let levelStartTime = 0;
 let currentDistance = 0;
-
-// Powerup state
-let activePowerup = null;
-let powerupEndTime = 0;
-let isShielded = false;
-let isSlowMotion = false;
-let isMagnet = false;
+let lastFlipTime = 0;
+const flipCooldown = 500; // 250ms = max 4 flips per second
 
 const spikeSizeChoices = [
   { width: 30, height: 30 },
@@ -154,13 +172,10 @@ const wallSizeChoices = [
   { width: 22, height: 120 }
 ];
 
-const powerupTypes = ['shield', 'slow', 'magnet'];
-
 const topSpikes = [];
 const bottomSpikes = [];
 const walls = [];
 const collectibles = [];
-const powerups = [];
 
 // ==================== AUDIO SYSTEM ====================
 let audioContext = null;
@@ -192,17 +207,14 @@ function initAudio() {
 }
 
 function playSound(type) {
-  if (!gameState.settings.sound) {
-    console.log('Sound disabled in settings');
+  const volume = gameState.settings.soundVolume / 100;
+  if (volume <= 0) {
     return;
   }
-  
-  console.log('Playing sound:', type);
   
   try {
     const ctx = initAudio();
     if (!ctx) {
-      console.log('No audio context');
       return;
     }
     
@@ -213,9 +225,12 @@ function playSound(type) {
     
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
+    const volumeGain = ctx.createGain();
+    volumeGain.gain.setValueAtTime(volume, ctx.currentTime);
     
     oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    gainNode.connect(volumeGain);
+    volumeGain.connect(ctx.destination);
     
     const now = ctx.currentTime;
     
@@ -293,45 +308,10 @@ function playSound(type) {
   }
 }
 
-// Test sound function that bypasses settings - for debugging
-function testSound() {
-  try {
-    // Create or get audio context
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Resume if suspended
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(() => {
-        playTestTone(ctx);
-      });
-    } else {
-      playTestTone(ctx);
-    }
-  } catch(e) {
-    alert('Audio Error: ' + e.message);
-  }
-}
 
-function playTestTone(ctx) {
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
-  
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(440, ctx.currentTime); // A4 note
-  gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-  
-  oscillator.start(ctx.currentTime);
-  oscillator.stop(ctx.currentTime + 0.5);
-  
-  console.log('Test tone played at 440Hz');
-}
 
-function startBackgroundMusic(initialIntensity = 0, initialBeatCount = 0) {
-  if (!gameState.settings.music || isMusicPlaying) return;
+function startBackgroundMusic(initialIntensity = 0.7, initialBeatCount = 0) {
+  if (gameState.settings.musicVolume <= 0 || isMusicPlaying) return;
   
   try {
     const ctx = initAudio();
@@ -342,21 +322,198 @@ function startBackgroundMusic(initialIntensity = 0, initialBeatCount = 0) {
       ctx.resume();
     }
     
-    // Create master gain
+    // Create master gain and effects chain
+    const musicVolume = gameState.settings.musicVolume / 100;
     bgMusicGain = ctx.createGain();
-    bgMusicGain.gain.setValueAtTime(0.15, ctx.currentTime);
+    bgMusicGain.gain.setValueAtTime(0.25 * musicVolume, ctx.currentTime);
     bgMusicGain.connect(ctx.destination);
     
-    // Create a pulsing beat that speeds up over time
-    let beatInterval = 600; // Start slow (600ms between beats)
+    // Create a filter for sweeping effect
+    const masterFilter = ctx.createBiquadFilter();
+    masterFilter.type = 'lowpass';
+    masterFilter.frequency.setValueAtTime(2500, ctx.currentTime);
+    masterFilter.Q.setValueAtTime(1, ctx.currentTime);
+    masterFilter.connect(bgMusicGain);
+    
+    // Musical constants - A minor / C major progression
+    const bassNotes = [55, 65.41, 73.42, 82.41]; // A1, C2, D2, E2
+    const chordProgressions = [
+      [220, 261.63, 329.63], // Am (A, C, E)
+      [196, 246.94, 293.66], // G (G, B, D)
+      [174.61, 220, 261.63], // F (F, A, C)
+      [164.81, 196, 246.94]  // Em (E, G, B)
+    ];
+    const arpNotes = [440, 523.25, 659.25, 783.99, 659.25, 523.25]; // A4, C5, E5, G5, E5, C5
+    
+    let beatInterval = 400; // Start at ~150 BPM feel (faster from the beginning)
     let beatCount = initialBeatCount;
-    let intensity = initialIntensity;
+    let intensity = initialIntensity; // Start at 0.7 for full sound from the beginning
+    let chordIndex = 0;
+    let arpIndex = 0;
+    
+    // Helper to create noise for hi-hats/snares
+    const createNoise = (duration) => {
+      const bufferSize = ctx.sampleRate * duration;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      return noise;
+    };
+    
+    // Helper to play a soft pad note
+    const playPad = (freq, duration, vol) => {
+      const osc = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1200, ctx.currentTime);
+      
+      osc.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterFilter);
+      
+      osc.type = 'sine';
+      osc2.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      osc2.frequency.setValueAtTime(freq * 1.002, ctx.currentTime); // Slight detune for richness
+      
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(vol * 0.3, ctx.currentTime + 0.1);
+      gain.gain.linearRampToValueAtTime(vol * 0.2, ctx.currentTime + duration * 0.7);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+      
+      osc.start(ctx.currentTime);
+      osc2.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+      osc2.stop(ctx.currentTime + duration);
+    };
+    
+    // Helper to play bass note
+    const playBass = (freq, duration, vol) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, ctx.currentTime);
+      filter.Q.setValueAtTime(2, ctx.currentTime);
+      
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterFilter);
+      
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(vol * 0.6, ctx.currentTime + duration * 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    };
+    
+    // Helper to play arpeggio note
+    const playArp = (freq, vol) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(masterFilter);
+      
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      
+      gain.gain.setValueAtTime(vol * 0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    };
+    
+    // Helper to play kick
+    const playKick = (vol) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(bgMusicGain);
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.15);
+      
+      gain.gain.setValueAtTime(vol * 0.7, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    };
+    
+    // Helper to play snare
+    const playSnare = (vol) => {
+      const noise = createNoise(0.15);
+      const noiseGain = ctx.createGain();
+      const noiseFilter = ctx.createBiquadFilter();
+      
+      noiseFilter.type = 'highpass';
+      noiseFilter.frequency.setValueAtTime(1000, ctx.currentTime);
+      
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(bgMusicGain);
+      
+      noiseGain.gain.setValueAtTime(vol * 0.3, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      
+      noise.start(ctx.currentTime);
+      noise.stop(ctx.currentTime + 0.15);
+      
+      // Add tonal component
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.connect(oscGain);
+      oscGain.connect(bgMusicGain);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(180, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.05);
+      oscGain.gain.setValueAtTime(vol * 0.3, ctx.currentTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+    };
+    
+    // Helper to play hi-hat
+    const playHiHat = (vol, open = false) => {
+      const noise = createNoise(open ? 0.2 : 0.05);
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(7000, ctx.currentTime);
+      
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(bgMusicGain);
+      
+      const duration = open ? 0.15 : 0.04;
+      gain.gain.setValueAtTime(vol * 0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      
+      noise.start(ctx.currentTime);
+      noise.stop(ctx.currentTime + duration + 0.01);
+    };
     
     const playBeat = () => {
-      if (!isMusicPlaying || !gameState.settings.music) return;
+      if (!isMusicPlaying || gameState.settings.musicVolume <= 0) return;
       if (bgMusicOscillator && bgMusicOscillator.isPaused) return;
-      
-      const now = ctx.currentTime;
       
       // Save current state
       if (bgMusicOscillator) {
@@ -364,67 +521,105 @@ function startBackgroundMusic(initialIntensity = 0, initialBeatCount = 0) {
         bgMusicOscillator.beatCount = beatCount;
       }
       
-      // Base beat - kick drum sound
-      const kick = ctx.createOscillator();
-      const kickGain = ctx.createGain();
-      kick.connect(kickGain);
-      kickGain.connect(bgMusicGain);
-      kick.type = 'sine';
-      kick.frequency.setValueAtTime(150, now);
-      kick.frequency.exponentialRampToValueAtTime(40, now + 0.1);
-      kickGain.gain.setValueAtTime(0.6, now);
-      kickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-      kick.start(now);
-      kick.stop(now + 0.15);
+      const beatInBar = beatCount % 16;
+      const bar = Math.floor(beatCount / 16);
       
-      // Add hi-hat every other beat as intensity increases
-      if (intensity > 0.3 && beatCount % 2 === 0) {
-        const hihat = ctx.createOscillator();
-        const hihatGain = ctx.createGain();
-        hihat.connect(hihatGain);
-        hihatGain.connect(bgMusicGain);
-        hihat.type = 'square';
-        hihat.frequency.setValueAtTime(8000, now);
-        hihatGain.gain.setValueAtTime(0.05 * intensity, now);
-        hihatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-        hihat.start(now);
-        hihat.stop(now + 0.05);
+      // Update filter sweep based on intensity
+      masterFilter.frequency.linearRampToValueAtTime(800 + intensity * 3000, ctx.currentTime + 0.1);
+      
+      // === DRUMS ===
+      // Kick on 1, 5, 9, 13 (four-on-the-floor at higher intensity)
+      if (beatInBar === 0 || beatInBar === 4 || beatInBar === 8 || beatInBar === 12) {
+        playKick(0.5 + intensity * 0.3);
+      } else if (intensity > 0.6 && (beatInBar === 2 || beatInBar === 6 || beatInBar === 10 || beatInBar === 14)) {
+        playKick(0.3); // Extra kicks at high intensity
       }
       
-      // Add synth stab as intensity increases
-      if (intensity > 0.5 && beatCount % 4 === 0) {
-        const synth = ctx.createOscillator();
-        const synthGain = ctx.createGain();
-        synth.connect(synthGain);
-        synthGain.connect(bgMusicGain);
-        synth.type = 'sawtooth';
-        const baseNote = [110, 138.59, 164.81, 220][Math.floor(beatCount / 4) % 4];
-        synth.frequency.setValueAtTime(baseNote, now);
-        synthGain.gain.setValueAtTime(0.15 * intensity, now);
-        synthGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        synth.start(now);
-        synth.stop(now + 0.25);
+      // Snare on 4 and 12
+      if (intensity > 0.2 && (beatInBar === 4 || beatInBar === 12)) {
+        playSnare(0.4 + intensity * 0.2);
       }
       
-      // Add bass as intensity increases more
-      if (intensity > 0.7) {
-        const bass = ctx.createOscillator();
-        const bassGain = ctx.createGain();
-        bass.connect(bassGain);
-        bassGain.connect(bgMusicGain);
-        bass.type = 'sine';
-        bass.frequency.setValueAtTime(55, now);
-        bassGain.gain.setValueAtTime(0.3 * intensity, now);
-        bassGain.gain.exponentialRampToValueAtTime(0.01, now + beatInterval / 1000);
-        bass.start(now);
-        bass.stop(now + beatInterval / 1000);
+      // Hi-hats - more frequent as intensity builds
+      if (intensity > 0.15) {
+        if (beatInBar % 2 === 0) {
+          playHiHat(intensity * 0.8, beatInBar === 8);
+        }
+        if (intensity > 0.5 && beatInBar % 2 === 1) {
+          playHiHat(intensity * 0.4);
+        }
+        if (intensity > 0.8) {
+          // 16th note hi-hats at max intensity
+          setTimeout(() => playHiHat(intensity * 0.25), beatInterval / 2);
+        }
+      }
+      
+      // === BASS ===
+      // Bass plays on beat 1 of each 4-beat group
+      if (beatInBar % 4 === 0) {
+        const bassNote = bassNotes[chordIndex];
+        const bassDuration = beatInterval * 3.5 / 1000;
+        playBass(bassNote, bassDuration, 0.35 + intensity * 0.15);
+        
+        // Sub-bass for extra depth at higher intensity
+        if (intensity > 0.4) {
+          playBass(bassNote / 2, bassDuration, 0.2 * intensity);
+        }
+      }
+      
+      // === PADS (chords) ===
+      // Chord changes every 16 beats
+      if (beatInBar === 0 && intensity > 0.1) {
+        const chord = chordProgressions[chordIndex];
+        const padDuration = beatInterval * 15 / 1000;
+        chord.forEach((note, i) => {
+          setTimeout(() => playPad(note, padDuration - i * 0.1, intensity * 0.6), i * 30);
+        });
+        chordIndex = (chordIndex + 1) % chordProgressions.length;
+      }
+      
+      // === ARPEGGIO ===
+      // Arpeggios come in at medium-high intensity
+      if (intensity > 0.45) {
+        playArp(arpNotes[arpIndex], intensity);
+        arpIndex = (arpIndex + 1) % arpNotes.length;
+      }
+      
+      // === MELODIC ACCENT ===
+      // Occasional melodic hits for interest
+      if (intensity > 0.6 && beatInBar === 0 && bar % 2 === 0) {
+        const melodyNote = arpNotes[Math.floor(Math.random() * arpNotes.length)] * 2;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2000, ctx.currentTime);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterFilter);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(melodyNote, ctx.currentTime);
+        
+        gain.gain.setValueAtTime(0.15 * intensity, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
       }
       
       beatCount++;
       
-      // Gradually increase intensity and speed up
-      intensity = Math.min(1, intensity + 0.01);
-      beatInterval = Math.max(150, 600 - (intensity * 450)); // Speed up from 600ms to 150ms
+      // Gradually increase intensity based on distance progress
+      // Music intensity is tied to currentDistance / level.distance
+      const level = LEVELS[gameState.currentLevel - 1];
+      const distanceProgress = Math.min(currentDistance / level.distance, 1);
+      intensity = 0.7 + (distanceProgress * 0.3); // Goes from 0.7 to 1.0
+      
+      // BPM increases from ~150 (400ms) to ~180 (333ms) as you progress through the level
+      beatInterval = Math.max(200, 400 - (distanceProgress * 200));
       
       // Schedule next beat
       if (bgMusicOscillator) {
@@ -477,7 +672,7 @@ function pauseBackgroundMusic() {
 }
 
 function resumeBackgroundMusic() {
-  if (!gameState.settings.music || !isMusicPlaying) return;
+  if (gameState.settings.musicVolume <= 0 || !isMusicPlaying) return;
   
   // If music was paused, we need to restart it to continue the beat
   // Since our beat is dynamic, we'll restart from current intensity
@@ -497,15 +692,19 @@ function resumeBackgroundMusic() {
 
 function restartBackgroundMusic() {
   stopBackgroundMusic();
-  if (gameState.settings.music) {
+  if (gameState.settings.musicVolume > 0) {
     startBackgroundMusic();
   }
 }
 
 function toggleMusic() {
-  if (gameState.settings.music) {
-    startBackgroundMusic();
-  } else {
+  if (gameState.settings.musicVolume > 0 && isGameRunning) {
+    if (!bgMusicGain) {
+      startBackgroundMusic();
+    } else {
+      updateMusicVolume();
+    }
+  } else if (gameState.settings.musicVolume === 0) {
     stopBackgroundMusic();
   }
 }
@@ -542,11 +741,22 @@ function loadGameState() {
     const parsed = JSON.parse(saved);
     // Properly merge settings to ensure defaults aren't lost
     const defaultSettings = {
-      sound: true,
-      music: true,
+      soundVolume: 100,
+      musicVolume: 100,
       particles: true,
       screenShake: true
     };
+    // Handle migration from old boolean settings
+    if (parsed.settings) {
+      if (typeof parsed.settings.sound === 'boolean') {
+        parsed.settings.soundVolume = parsed.settings.sound ? 100 : 0;
+        delete parsed.settings.sound;
+      }
+      if (typeof parsed.settings.music === 'boolean') {
+        parsed.settings.musicVolume = parsed.settings.music ? 100 : 0;
+        delete parsed.settings.music;
+      }
+    }
     gameState = { 
       ...gameState, 
       ...parsed,
@@ -554,7 +764,6 @@ function loadGameState() {
     };
   }
   console.log('Loaded gameState:', gameState);
-  console.log('Sound setting:', gameState.settings.sound);
   updateHomeStats();
   renderLevelGrid();
 }
@@ -568,9 +777,10 @@ function resetProgress() {
     totalDistance: 0,
     levelCompleted: {},
     unlockedLevels: [1],
+    selectedColor: 'cyan',
     settings: {
-      sound: true,
-      music: true,
+      soundVolume: 100,
+      musicVolume: 100,
       particles: true,
       screenShake: true
     }
@@ -579,6 +789,7 @@ function resetProgress() {
   updateHomeStats();
   renderLevelGrid();
   updateSettingsUI();
+  applyBoxColor();
 }
 
 // ==================== BACKGROUND PARTICLES ====================
@@ -615,6 +826,7 @@ function createParticle() {
 function showScreen(screenName) {
   levelScreen.classList.remove('active');
   settingsScreen.classList.remove('active');
+  storeScreen.classList.remove('active');
   gameScreen.classList.remove('active');
   
   gameState.currentScreen = screenName;
@@ -628,6 +840,10 @@ function showScreen(screenName) {
     case 'settings':
       settingsScreen.classList.add('active');
       updateSettingsUI();
+      break;
+    case 'store':
+      storeScreen.classList.add('active');
+      renderColorGrid();
       break;
     case 'game':
       gameScreen.classList.add('active');
@@ -684,19 +900,101 @@ function renderLevelGrid() {
 }
 
 function updateSettingsUI() {
-  console.log('Settings:', gameState.settings);
+  // Volume sliders
+  soundVolume.value = gameState.settings.soundVolume;
+  soundValue.textContent = gameState.settings.soundVolume + '%';
+  updateVolumeIcon(soundIcon, gameState.settings.soundVolume);
   
-  soundToggle.classList.toggle('active', gameState.settings.sound);
-  soundToggle.textContent = gameState.settings.sound ? 'ON' : 'OFF';
+  musicVolume.value = gameState.settings.musicVolume;
+  musicValue.textContent = gameState.settings.musicVolume + '%';
+  updateVolumeIcon(musicIcon, gameState.settings.musicVolume);
   
-  musicToggle.classList.toggle('active', gameState.settings.music);
-  musicToggle.textContent = gameState.settings.music ? 'ON' : 'OFF';
-  
+  // Toggle buttons
   particlesToggle.classList.toggle('active', gameState.settings.particles);
   particlesToggle.textContent = gameState.settings.particles ? 'ON' : 'OFF';
   
   shakeToggle.classList.toggle('active', gameState.settings.screenShake);
   shakeToggle.textContent = gameState.settings.screenShake ? 'ON' : 'OFF';
+}
+
+function updateVolumeIcon(iconElement, volume) {
+  if (volume === 0) {
+    iconElement.textContent = '🔇';
+  } else if (volume < 50) {
+    iconElement.textContent = '🔉';
+  } else {
+    iconElement.textContent = '🔊';
+  }
+}
+
+function updateMusicVolume() {
+  if (bgMusicGain && audioContext) {
+    const volume = gameState.settings.musicVolume / 100;
+    bgMusicGain.gain.setTargetAtTime(0.25 * volume, audioContext.currentTime, 0.1);
+  }
+}
+
+// ==================== STORE FUNCTIONS ====================
+function renderColorGrid() {
+  colorGrid.innerHTML = '';
+  
+  BOX_COLORS.forEach(colorData => {
+    const colorItem = document.createElement('div');
+    colorItem.className = 'color-item';
+    if (gameState.selectedColor === colorData.id) {
+      colorItem.classList.add('selected');
+    }
+    colorItem.style.background = colorData.color;
+    colorItem.style.boxShadow = `0 4px 15px ${colorData.glow}`;
+    colorItem.dataset.colorId = colorData.id;
+    
+    colorItem.addEventListener('click', () => selectColor(colorData.id));
+    
+    colorGrid.appendChild(colorItem);
+  });
+  
+  updateColorPreview();
+}
+
+function selectColor(colorId) {
+  playSound('click');
+  gameState.selectedColor = colorId;
+  saveGameState();
+  
+  // Update UI
+  document.querySelectorAll('.color-item').forEach(item => {
+    item.classList.toggle('selected', item.dataset.colorId === colorId);
+  });
+  
+  updateColorPreview();
+  applyBoxColor();
+}
+
+function updateColorPreview() {
+  const colorData = BOX_COLORS.find(c => c.id === gameState.selectedColor) || BOX_COLORS[0];
+  previewBox.style.background = colorData.color;
+  previewBox.style.boxShadow = `0 0 15px ${colorData.glow}`;
+  previewName.textContent = colorData.name;
+}
+
+function applyBoxColor() {
+  const colorData = BOX_COLORS.find(c => c.id === gameState.selectedColor) || BOX_COLORS[0];
+  box.style.background = `linear-gradient(135deg, ${colorData.color}, ${adjustColor(colorData.color, -30)})`;
+  box.style.boxShadow = `
+    0 0 20px ${colorData.glow},
+    0 0 40px ${colorData.glow.replace('0.8', '0.4')},
+    inset 0 0 15px rgba(255, 255, 255, 0.3)
+  `;
+}
+
+function adjustColor(hex, amount) {
+  // Adjust color brightness
+  let color = hex.replace('#', '');
+  let num = parseInt(color, 16);
+  let r = Math.min(255, Math.max(0, (num >> 16) + amount));
+  let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+  let b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+  return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
 }
 
 // ==================== GAME INITIALIZATION ====================
@@ -709,8 +1007,9 @@ function startLevel(levelId) {
   lastTime = 0;
   levelStartTime = performance.now();
   
-  // Start background music
-  startBackgroundMusic();
+  // Always start background music fresh from the beginning
+  stopBackgroundMusic();
+  startBackgroundMusic(0, 0);
   
   requestAnimationFrame(loop);
 }
@@ -750,12 +1049,10 @@ function initWorld() {
   spikesBottomContainer.innerHTML = "";
   wallsContainer.innerHTML = "";
   collectiblesContainer.innerHTML = "";
-  powerupsContainer.innerHTML = "";
   topSpikes.length = 0;
   bottomSpikes.length = 0;
   walls.length = 0;
   collectibles.length = 0;
-  powerups.length = 0;
 
   farthestSpikeX = 620 - randInt(120, 240);
   for (let i = 0; i < 36; i++) {
@@ -776,13 +1073,6 @@ function initWorld() {
     }
   }
 
-  if (level.hasPowerups) {
-    farthestPowerupX = 2000;
-    for (let i = 0; i < 3; i++) {
-      addPowerup();
-    }
-  }
-
   cameraX = 0;
   y = (minY + maxY) / 2;
   vy = 0;
@@ -793,10 +1083,7 @@ function initWorld() {
   flipped = false;
   combo = 0;
   currentDistance = 0;
-  activePowerup = null;
-  isShielded = false;
-  isSlowMotion = false;
-  isMagnet = false;
+  lastFlipTime = 0;
   
   updateScore();
   updateLevelDisplay();
@@ -804,11 +1091,11 @@ function initWorld() {
   updateProgress();
   updateSpeedDisplay();
   hideCombo();
-  hidePowerupIndicator();
   hideMessage();
   
   box.className = 'box';
   box.style.transform = 'rotate(0deg)';
+  applyBoxColor();
 }
 
 // ==================== SPIKE MANAGEMENT ====================
@@ -994,100 +1281,6 @@ function recycleCollectibles() {
   }
 }
 
-// ==================== POWERUP MANAGEMENT ====================
-function createPowerup(x) {
-  const type = randomFrom(powerupTypes);
-  const el = document.createElement("div");
-  el.className = `powerup ${type}`;
-  
-  const icons = { shield: '🛡', slow: '⏱', magnet: '🧲' };
-  el.textContent = icons[type];
-  powerupsContainer.appendChild(el);
-
-  return {
-    x,
-    y: randInt(minY + 60, maxY - 60),
-    width: 36,
-    height: 36,
-    collected: false,
-    type,
-    el
-  };
-}
-
-function addPowerup() {
-  farthestPowerupX += randInt(1500, 2500);
-  powerups.push(createPowerup(farthestPowerupX));
-}
-
-function recyclePowerups() {
-  const level = LEVELS[gameState.currentLevel - 1];
-  if (!level.hasPowerups) return;
-  
-  const offscreenLeft = cameraX - 100;
-
-  for (let i = powerups.length - 1; i >= 0; i--) {
-    const p = powerups[i];
-    
-    if (p.collected || p.x < offscreenLeft) {
-      p.el.remove();
-      powerups.splice(i, 1);
-      addPowerup();
-    }
-  }
-}
-
-function activatePowerup(type) {
-  activePowerup = type;
-  powerupEndTime = performance.now() + 5000;
-  
-  box.classList.remove('shielded', 'slow-motion', 'magnet');
-  
-  const icons = { shield: '🛡', slow: '⏱', magnet: '🧲' };
-  powerupIcon.textContent = icons[type];
-  powerupActive.classList.remove('hidden');
-  powerupTimer.style.animation = 'none';
-  void powerupTimer.offsetWidth;
-  powerupTimer.style.animation = 'timerDrain 5s linear forwards';
-  
-  switch(type) {
-    case 'shield':
-      isShielded = true;
-      box.classList.add('shielded');
-      showMessage('SHIELD!');
-      break;
-    case 'slow':
-      isSlowMotion = true;
-      box.classList.add('slow-motion');
-      showMessage('SLOW-MO!');
-      break;
-    case 'magnet':
-      isMagnet = true;
-      box.classList.add('magnet');
-      showMessage('MAGNET!');
-      break;
-  }
-}
-
-function updatePowerups() {
-  if (activePowerup && performance.now() > powerupEndTime) {
-    deactivatePowerup();
-  }
-}
-
-function deactivatePowerup() {
-  activePowerup = null;
-  isShielded = false;
-  isSlowMotion = false;
-  isMagnet = false;
-  box.classList.remove('shielded', 'slow-motion', 'magnet');
-  hidePowerupIndicator();
-}
-
-function hidePowerupIndicator() {
-  powerupActive.classList.add('hidden');
-}
-
 // ==================== SCORING ====================
 function addScore(points) {
   combo++;
@@ -1174,11 +1367,8 @@ function checkCollisions() {
     const sx = s.x - cameraX;
     const sy = boundaryOffset;
     if (intersects(px, py, boxWidth, boxHeight, sx, sy, s.width, s.height)) {
-      if (!isShielded) {
-        triggerHit();
-        return;
-      }
-      deactivatePowerup();
+      triggerHit();
+      return;
     }
   }
 
@@ -1187,11 +1377,8 @@ function checkCollisions() {
     const sx = s.x - cameraX;
     const sy = gameHeight - boundaryOffset - s.height;
     if (intersects(px, py, boxWidth, boxHeight, sx, sy, s.width, s.height)) {
-      if (!isShielded) {
-        triggerHit();
-        return;
-      }
-      deactivatePowerup();
+      triggerHit();
+      return;
     }
   }
 
@@ -1200,52 +1387,23 @@ function checkCollisions() {
     const wall = walls[i];
     const wx = wall.x - cameraX;
     if (intersects(px, py, boxWidth, boxHeight, wx, wall.y, wall.width, wall.height)) {
-      if (!isShielded) {
-        triggerHit();
-        return;
-      }
-      deactivatePowerup();
+      triggerHit();
+      return;
     }
   }
 
   // Check collectible collisions
-  const magnetRange = isMagnet ? 80 : 0;
   for (let i = 0; i < collectibles.length; i++) {
     const c = collectibles[i];
     if (c.collected) continue;
     
     const cx = c.x - cameraX;
     
-    // Magnet effect - pull collectibles toward player
-    if (isMagnet) {
-      const dx = px - cx;
-      const dy = py - c.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 150) {
-        c.x += dx * 0.1;
-        c.y += dy * 0.1;
-      }
-    }
-    
-    if (intersects(px - magnetRange/2, py - magnetRange/2, boxWidth + magnetRange, boxHeight + magnetRange, cx, c.y, c.width, c.height)) {
+    if (intersects(px, py, boxWidth, boxHeight, cx, c.y, c.width, c.height)) {
       c.collected = true;
       c.el.style.transform = 'scale(0)';
       playSound('collect');
       addScore(c.value);
-    }
-  }
-
-  // Check powerup collisions
-  for (let i = 0; i < powerups.length; i++) {
-    const p = powerups[i];
-    if (p.collected) continue;
-    
-    const px2 = p.x - cameraX;
-    if (intersects(px, py, boxWidth, boxHeight, px2, p.y, p.width, p.height)) {
-      p.collected = true;
-      p.el.style.transform = 'scale(0)';
-      playSound('powerup');
-      activatePowerup(p.type);
     }
   }
 }
@@ -1345,6 +1503,11 @@ function levelComplete() {
 function flipGravity() {
   if (isPaused || !isGameRunning) return;
   
+  // Cooldown check - limit to 2 flips per second
+  const now = performance.now();
+  if (now - lastFlipTime < flipCooldown) return;
+  lastFlipTime = now;
+  
   // Play flip sound
   playSound('flip');
   
@@ -1436,9 +1599,6 @@ function restartLevel() {
   gameOverOverlay.classList.add('hidden');
   levelCompleteOverlay.classList.add('hidden');
   
-  // Restart background music from the beginning
-  restartBackgroundMusic();
-  
   startLevel(gameState.currentLevel);
 }
 
@@ -1507,13 +1667,6 @@ function render() {
       c.el.style.transform = "translate(" + (c.x - cameraX) + "px, " + c.y + "px)";
     }
   }
-
-  for (let i = 0; i < powerups.length; i++) {
-    const p = powerups[i];
-    if (!p.collected) {
-      p.el.style.transform = "translate(" + (p.x - cameraX) + "px, " + p.y + "px)";
-    }
-  }
 }
 
 // ==================== GAME LOOP ====================
@@ -1529,11 +1682,6 @@ function loop(timestamp) {
   const frameDelta = Math.min(34, timestamp - lastTime);
   let dt = frameDelta / 16.6667;
   lastTime = timestamp;
-
-  // Slow motion effect
-  if (isSlowMotion) {
-    dt *= 0.5;
-  }
 
   runElapsedMs += frameDelta;
   const speedProgress = Math.min(runElapsedMs / 60000, 1);
@@ -1564,8 +1712,6 @@ function loop(timestamp) {
   recycleSpikes();
   recycleWalls();
   recycleCollectibles();
-  recyclePowerups();
-  updatePowerups();
   updateDistance();
   updateProgress();
   checkCollisions();
@@ -1578,20 +1724,26 @@ function loop(timestamp) {
 // Level screen buttons
 settingsBtn.addEventListener('click', () => { playSound('click'); showScreen('settings'); });
 settingsBackBtn.addEventListener('click', () => { playSound('click'); showScreen('levels'); });
+storeBtn.addEventListener('click', () => { playSound('click'); showScreen('store'); });
+storeBackBtn.addEventListener('click', () => { playSound('click'); showScreen('levels'); });
 
-// Settings toggles
-soundToggle.addEventListener('click', () => {
-  gameState.settings.sound = !gameState.settings.sound;
-  playSound('click');
-  updateSettingsUI();
+// Settings volume sliders
+soundVolume.addEventListener('input', (e) => {
+  gameState.settings.soundVolume = parseInt(e.target.value);
+  soundValue.textContent = gameState.settings.soundVolume + '%';
+  updateVolumeIcon(soundIcon, gameState.settings.soundVolume);
   saveGameState();
 });
 
-musicToggle.addEventListener('click', () => {
-  gameState.settings.music = !gameState.settings.music;
+soundVolume.addEventListener('change', () => {
   playSound('click');
-  toggleMusic();
-  updateSettingsUI();
+});
+
+musicVolume.addEventListener('input', (e) => {
+  gameState.settings.musicVolume = parseInt(e.target.value);
+  musicValue.textContent = gameState.settings.musicVolume + '%';
+  updateVolumeIcon(musicIcon, gameState.settings.musicVolume);
+  updateMusicVolume();
   saveGameState();
 });
 
@@ -1614,12 +1766,6 @@ resetBtn.addEventListener('click', () => {
   if (confirm('Are you sure you want to reset all progress?')) {
     resetProgress();
   }
-});
-
-// Test sound button
-testSoundBtn.addEventListener('click', () => {
-  console.log('Test sound button clicked');
-  testSound();
 });
 
 // Game controls
@@ -1705,6 +1851,7 @@ document.addEventListener('touchstart', unlockAudio);
 document.addEventListener('keydown', unlockAudio);
 
 loadGameState();
+applyBoxColor();
 createBackgroundParticles();
 showScreen('levels');
 
