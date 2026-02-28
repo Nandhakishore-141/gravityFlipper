@@ -41,6 +41,7 @@ const musicToggle = document.getElementById("musicToggle");
 const particlesToggle = document.getElementById("particlesToggle");
 const shakeToggle = document.getElementById("shakeToggle");
 const resetBtn = document.getElementById("resetBtn");
+const testSoundBtn = document.getElementById("testSoundBtn");
 
 // Overlay Elements
 const pauseOverlay = document.getElementById("pauseOverlay");
@@ -161,6 +162,354 @@ const walls = [];
 const collectibles = [];
 const powerups = [];
 
+// ==================== AUDIO SYSTEM ====================
+let audioContext = null;
+let bgMusicOscillator = null;
+let bgMusicGain = null;
+let isMusicPlaying = false;
+let audioUnlocked = false;
+
+function initAudio() {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('AudioContext created, state:', audioContext.state);
+    }
+    // Resume audio context if suspended (browser autoplay policy)
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        console.log('AudioContext resumed');
+        audioUnlocked = true;
+      });
+    } else {
+      audioUnlocked = true;
+    }
+    return audioContext;
+  } catch(e) {
+    console.error('Failed to create AudioContext:', e);
+    return null;
+  }
+}
+
+function playSound(type) {
+  if (!gameState.settings.sound) {
+    console.log('Sound disabled in settings');
+    return;
+  }
+  
+  console.log('Playing sound:', type);
+  
+  try {
+    const ctx = initAudio();
+    if (!ctx) {
+      console.log('No audio context');
+      return;
+    }
+    
+    // Make sure context is running
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    const now = ctx.currentTime;
+    
+    switch(type) {
+      case 'flip':
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(400, now);
+        oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+        gainNode.gain.setValueAtTime(0.5, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        oscillator.start(now);
+        oscillator.stop(now + 0.15);
+        break;
+        
+      case 'collect':
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, now);
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        oscillator.start(now);
+        oscillator.stop(now + 0.15);
+        break;
+        
+      case 'powerup':
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(440, now);
+        oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        oscillator.start(now);
+        oscillator.stop(now + 0.25);
+        break;
+        
+      case 'hit':
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(150, now);
+        oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+        gainNode.gain.setValueAtTime(0.5, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        oscillator.start(now);
+        oscillator.stop(now + 0.25);
+        break;
+        
+      case 'levelComplete':
+        // Play a simple victory beep sequence
+        [523, 659, 784, 1047].forEach((freq, i) => {
+          setTimeout(() => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.2);
+          }, i * 150);
+        });
+        return;
+        
+      case 'click':
+      default:
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(1000, now);
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        oscillator.start(now);
+        oscillator.stop(now + 0.05);
+        break;
+    }
+    console.log('Sound played successfully');
+  } catch(e) {
+    console.error('Audio error:', e);
+  }
+}
+
+// Test sound function that bypasses settings - for debugging
+function testSound() {
+  try {
+    // Create or get audio context
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Resume if suspended
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        playTestTone(ctx);
+      });
+    } else {
+      playTestTone(ctx);
+    }
+  } catch(e) {
+    alert('Audio Error: ' + e.message);
+  }
+}
+
+function playTestTone(ctx) {
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(440, ctx.currentTime); // A4 note
+  gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+  
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + 0.5);
+  
+  console.log('Test tone played at 440Hz');
+}
+
+function startBackgroundMusic(initialIntensity = 0, initialBeatCount = 0) {
+  if (!gameState.settings.music || isMusicPlaying) return;
+  
+  try {
+    const ctx = initAudio();
+    if (!ctx) return;
+    
+    // Resume if needed
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
+    // Create master gain
+    bgMusicGain = ctx.createGain();
+    bgMusicGain.gain.setValueAtTime(0.15, ctx.currentTime);
+    bgMusicGain.connect(ctx.destination);
+    
+    // Create a pulsing beat that speeds up over time
+    let beatInterval = 600; // Start slow (600ms between beats)
+    let beatCount = initialBeatCount;
+    let intensity = initialIntensity;
+    
+    const playBeat = () => {
+      if (!isMusicPlaying || !gameState.settings.music) return;
+      if (bgMusicOscillator && bgMusicOscillator.isPaused) return;
+      
+      const now = ctx.currentTime;
+      
+      // Save current state
+      if (bgMusicOscillator) {
+        bgMusicOscillator.intensity = intensity;
+        bgMusicOscillator.beatCount = beatCount;
+      }
+      
+      // Base beat - kick drum sound
+      const kick = ctx.createOscillator();
+      const kickGain = ctx.createGain();
+      kick.connect(kickGain);
+      kickGain.connect(bgMusicGain);
+      kick.type = 'sine';
+      kick.frequency.setValueAtTime(150, now);
+      kick.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+      kickGain.gain.setValueAtTime(0.6, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      kick.start(now);
+      kick.stop(now + 0.15);
+      
+      // Add hi-hat every other beat as intensity increases
+      if (intensity > 0.3 && beatCount % 2 === 0) {
+        const hihat = ctx.createOscillator();
+        const hihatGain = ctx.createGain();
+        hihat.connect(hihatGain);
+        hihatGain.connect(bgMusicGain);
+        hihat.type = 'square';
+        hihat.frequency.setValueAtTime(8000, now);
+        hihatGain.gain.setValueAtTime(0.05 * intensity, now);
+        hihatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        hihat.start(now);
+        hihat.stop(now + 0.05);
+      }
+      
+      // Add synth stab as intensity increases
+      if (intensity > 0.5 && beatCount % 4 === 0) {
+        const synth = ctx.createOscillator();
+        const synthGain = ctx.createGain();
+        synth.connect(synthGain);
+        synthGain.connect(bgMusicGain);
+        synth.type = 'sawtooth';
+        const baseNote = [110, 138.59, 164.81, 220][Math.floor(beatCount / 4) % 4];
+        synth.frequency.setValueAtTime(baseNote, now);
+        synthGain.gain.setValueAtTime(0.15 * intensity, now);
+        synthGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        synth.start(now);
+        synth.stop(now + 0.25);
+      }
+      
+      // Add bass as intensity increases more
+      if (intensity > 0.7) {
+        const bass = ctx.createOscillator();
+        const bassGain = ctx.createGain();
+        bass.connect(bassGain);
+        bassGain.connect(bgMusicGain);
+        bass.type = 'sine';
+        bass.frequency.setValueAtTime(55, now);
+        bassGain.gain.setValueAtTime(0.3 * intensity, now);
+        bassGain.gain.exponentialRampToValueAtTime(0.01, now + beatInterval / 1000);
+        bass.start(now);
+        bass.stop(now + beatInterval / 1000);
+      }
+      
+      beatCount++;
+      
+      // Gradually increase intensity and speed up
+      intensity = Math.min(1, intensity + 0.01);
+      beatInterval = Math.max(150, 600 - (intensity * 450)); // Speed up from 600ms to 150ms
+      
+      // Schedule next beat
+      if (bgMusicOscillator) {
+        bgMusicOscillator.timeoutId = setTimeout(playBeat, beatInterval);
+      }
+    };
+    
+    // Store reference for cleanup
+    bgMusicOscillator = { timeoutId: null, isPaused: false, intensity: intensity, beatCount: beatCount };
+    isMusicPlaying = true;
+    
+    // Start the beat
+    playBeat();
+    
+    console.log('Dynamic music started');
+  } catch(e) {
+    console.log('Music error:', e);
+  }
+}
+
+// Helper function to start music with saved state
+function startBackgroundMusicWithState(intensity, beatCount) {
+  startBackgroundMusic(intensity, beatCount);
+}
+
+function stopBackgroundMusic() {
+  if (bgMusicOscillator) {
+    try {
+      if (bgMusicOscillator.timeoutId) {
+        clearTimeout(bgMusicOscillator.timeoutId);
+      }
+      if (bgMusicOscillator.stop) {
+        bgMusicOscillator.stop();
+      }
+      if (bgMusicOscillator.extraOscillators) {
+        bgMusicOscillator.extraOscillators.forEach(osc => osc.stop());
+      }
+    } catch(e) {}
+    bgMusicOscillator = null;
+  }
+  isMusicPlaying = false;
+}
+
+function pauseBackgroundMusic() {
+  if (bgMusicOscillator && bgMusicOscillator.timeoutId) {
+    clearTimeout(bgMusicOscillator.timeoutId);
+    bgMusicOscillator.timeoutId = null;
+    bgMusicOscillator.isPaused = true;
+  }
+}
+
+function resumeBackgroundMusic() {
+  if (!gameState.settings.music || !isMusicPlaying) return;
+  
+  // If music was paused, we need to restart it to continue the beat
+  // Since our beat is dynamic, we'll restart from current intensity
+  if (bgMusicOscillator && bgMusicOscillator.isPaused) {
+    bgMusicOscillator.isPaused = false;
+    // Restart the beat loop
+    const ctx = initAudio();
+    if (ctx) {
+      const savedIntensity = bgMusicOscillator.intensity || 0;
+      const savedBeatCount = bgMusicOscillator.beatCount || 0;
+      stopBackgroundMusic();
+      // Restart with saved state
+      startBackgroundMusicWithState(savedIntensity, savedBeatCount);
+    }
+  }
+}
+
+function restartBackgroundMusic() {
+  stopBackgroundMusic();
+  if (gameState.settings.music) {
+    startBackgroundMusic();
+  }
+}
+
+function toggleMusic() {
+  if (gameState.settings.music) {
+    startBackgroundMusic();
+  } else {
+    stopBackgroundMusic();
+  }
+}
+
 // ==================== UTILITY FUNCTIONS ====================
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -191,8 +540,21 @@ function loadGameState() {
   const saved = localStorage.getItem('gravityFlipperSave');
   if (saved) {
     const parsed = JSON.parse(saved);
-    gameState = { ...gameState, ...parsed };
+    // Properly merge settings to ensure defaults aren't lost
+    const defaultSettings = {
+      sound: true,
+      music: true,
+      particles: true,
+      screenShake: true
+    };
+    gameState = { 
+      ...gameState, 
+      ...parsed,
+      settings: { ...defaultSettings, ...(parsed.settings || {}) }
+    };
   }
+  console.log('Loaded gameState:', gameState);
+  console.log('Sound setting:', gameState.settings.sound);
   updateHomeStats();
   renderLevelGrid();
 }
@@ -310,6 +672,7 @@ function renderLevelGrid() {
       const handleLevelSelect = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        playSound('click');
         startLevel(level.id);
       };
       card.addEventListener('click', handleLevelSelect);
@@ -321,6 +684,8 @@ function renderLevelGrid() {
 }
 
 function updateSettingsUI() {
+  console.log('Settings:', gameState.settings);
+  
   soundToggle.classList.toggle('active', gameState.settings.sound);
   soundToggle.textContent = gameState.settings.sound ? 'ON' : 'OFF';
   
@@ -343,6 +708,10 @@ function startLevel(levelId) {
   isGameRunning = true;
   lastTime = 0;
   levelStartTime = performance.now();
+  
+  // Start background music
+  startBackgroundMusic();
+  
   requestAnimationFrame(loop);
 }
 
@@ -861,6 +1230,7 @@ function checkCollisions() {
     if (intersects(px - magnetRange/2, py - magnetRange/2, boxWidth + magnetRange, boxHeight + magnetRange, cx, c.y, c.width, c.height)) {
       c.collected = true;
       c.el.style.transform = 'scale(0)';
+      playSound('collect');
       addScore(c.value);
     }
   }
@@ -874,6 +1244,7 @@ function checkCollisions() {
     if (intersects(px, py, boxWidth, boxHeight, px2, p.y, p.width, p.height)) {
       p.collected = true;
       p.el.style.transform = 'scale(0)';
+      playSound('powerup');
       activatePowerup(p.type);
     }
   }
@@ -884,6 +1255,9 @@ function triggerHit() {
   const now = performance.now();
   if (now < hitUntil) return;
 
+  // Play hit sound
+  playSound('hit');
+  
   hitUntil = now + 260;
   box.classList.add("hit");
   
@@ -922,6 +1296,9 @@ function gameOver() {
 function levelComplete() {
   isGameRunning = false;
   isPaused = true;
+  
+  // Play level complete sound
+  playSound('levelComplete');
   
   const elapsedTime = (performance.now() - levelStartTime) / 1000;
   const minutes = Math.floor(elapsedTime / 60);
@@ -967,6 +1344,9 @@ function levelComplete() {
 // ==================== GAME CONTROLS ====================
 function flipGravity() {
   if (isPaused || !isGameRunning) return;
+  
+  // Play flip sound
+  playSound('flip');
   
   // Create trail effect
   createTrailGhost();
@@ -1035,12 +1415,19 @@ function pauseGame() {
   pauseScore.textContent = score;
   pauseLevel.textContent = gameState.currentLevel;
   pauseOverlay.classList.remove('hidden');
+  
+  // Pause the background music
+  pauseBackgroundMusic();
 }
 
 function resumeGame() {
   isPaused = false;
   pauseOverlay.classList.add('hidden');
   lastTime = 0;
+  
+  // Resume the background music
+  resumeBackgroundMusic();
+  
   requestAnimationFrame(loop);
 }
 
@@ -1048,6 +1435,10 @@ function restartLevel() {
   pauseOverlay.classList.add('hidden');
   gameOverOverlay.classList.add('hidden');
   levelCompleteOverlay.classList.add('hidden');
+  
+  // Restart background music from the beginning
+  restartBackgroundMusic();
+  
   startLevel(gameState.currentLevel);
 }
 
@@ -1060,6 +1451,9 @@ function quitToMenu() {
   // Stop the game completely
   isGameRunning = false;
   isPaused = false;
+  
+  // Stop background music
+  stopBackgroundMusic();
   
   // Remove active class from game screen to fully hide it
   gameScreen.classList.remove('active');
@@ -1182,61 +1576,73 @@ function loop(timestamp) {
 
 // ==================== EVENT LISTENERS ====================
 // Level screen buttons
-settingsBtn.addEventListener('click', () => showScreen('settings'));
-settingsBackBtn.addEventListener('click', () => showScreen('levels'));
+settingsBtn.addEventListener('click', () => { playSound('click'); showScreen('settings'); });
+settingsBackBtn.addEventListener('click', () => { playSound('click'); showScreen('levels'); });
 
 // Settings toggles
 soundToggle.addEventListener('click', () => {
   gameState.settings.sound = !gameState.settings.sound;
+  playSound('click');
   updateSettingsUI();
   saveGameState();
 });
 
 musicToggle.addEventListener('click', () => {
   gameState.settings.music = !gameState.settings.music;
+  playSound('click');
+  toggleMusic();
   updateSettingsUI();
   saveGameState();
 });
 
 particlesToggle.addEventListener('click', () => {
+  playSound('click');
   gameState.settings.particles = !gameState.settings.particles;
   updateSettingsUI();
   saveGameState();
 });
 
 shakeToggle.addEventListener('click', () => {
+  playSound('click');
   gameState.settings.screenShake = !gameState.settings.screenShake;
   updateSettingsUI();
   saveGameState();
 });
 
 resetBtn.addEventListener('click', () => {
+  playSound('click');
   if (confirm('Are you sure you want to reset all progress?')) {
     resetProgress();
   }
 });
 
+// Test sound button
+testSoundBtn.addEventListener('click', () => {
+  console.log('Test sound button clicked');
+  testSound();
+});
+
 // Game controls
-pauseBtn.addEventListener('click', pauseGame);
-resumeBtn.addEventListener('click', resumeGame);
-restartBtn.addEventListener('click', restartLevel);
-quitBtn.addEventListener('click', quitToMenu);
-retryBtn.addEventListener('click', restartLevel);
-menuBtn.addEventListener('click', quitToMenu);
-nextLevelBtn.addEventListener('click', nextLevel);
-replayBtn.addEventListener('click', restartLevel);
-lcMenuBtn.addEventListener('click', quitToMenu);
+pauseBtn.addEventListener('click', () => { playSound('click'); pauseGame(); });
+resumeBtn.addEventListener('click', () => { playSound('click'); resumeGame(); });
+restartBtn.addEventListener('click', () => { playSound('click'); restartLevel(); });
+quitBtn.addEventListener('click', () => { playSound('click'); quitToMenu(); });
+retryBtn.addEventListener('click', () => { playSound('click'); restartLevel(); });
+menuBtn.addEventListener('click', () => { playSound('click'); quitToMenu(); });
+nextLevelBtn.addEventListener('click', () => { playSound('click'); nextLevel(); });
+replayBtn.addEventListener('click', () => { playSound('click'); restartLevel(); });
+lcMenuBtn.addEventListener('click', () => { playSound('click'); quitToMenu(); });
 
 // Touch support for buttons (ensures mobile compatibility)
-pauseBtn.addEventListener('touchend', (e) => { e.preventDefault(); pauseGame(); });
-resumeBtn.addEventListener('touchend', (e) => { e.preventDefault(); resumeGame(); });
-restartBtn.addEventListener('touchend', (e) => { e.preventDefault(); restartLevel(); });
-quitBtn.addEventListener('touchend', (e) => { e.preventDefault(); quitToMenu(); });
-retryBtn.addEventListener('touchend', (e) => { e.preventDefault(); restartLevel(); });
-menuBtn.addEventListener('touchend', (e) => { e.preventDefault(); quitToMenu(); });
-nextLevelBtn.addEventListener('touchend', (e) => { e.preventDefault(); nextLevel(); });
-replayBtn.addEventListener('touchend', (e) => { e.preventDefault(); restartLevel(); });
-lcMenuBtn.addEventListener('touchend', (e) => { e.preventDefault(); quitToMenu(); });
+pauseBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); pauseGame(); });
+resumeBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); resumeGame(); });
+restartBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); restartLevel(); });
+quitBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); quitToMenu(); });
+retryBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); restartLevel(); });
+menuBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); quitToMenu(); });
+nextLevelBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); nextLevel(); });
+replayBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); restartLevel(); });
+lcMenuBtn.addEventListener('touchend', (e) => { e.preventDefault(); playSound('click'); quitToMenu(); });
 
 // Keyboard controls
 function isSpaceInput(event) {
@@ -1283,6 +1689,21 @@ game.addEventListener("pointerdown", (e) => {
 window.addEventListener("resize", resizeGame);
 
 // ==================== INITIALIZATION ==================== 
+// Unlock audio on first user interaction (required by browser autoplay policy)
+function unlockAudio() {
+  initAudio();
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+  // Remove listeners after first interaction
+  document.removeEventListener('click', unlockAudio);
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('keydown', unlockAudio);
+}
+document.addEventListener('click', unlockAudio);
+document.addEventListener('touchstart', unlockAudio);
+document.addEventListener('keydown', unlockAudio);
+
 loadGameState();
 createBackgroundParticles();
 showScreen('levels');
