@@ -1984,3 +1984,370 @@ body {
   }
 }
 
+/* ===== POWERUP SHOP STYLES ===== */
+
+.powerup-shop-screen {
+  background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a1a 100%);
+}
+
+.powerup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 800px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.powerup-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.powerup-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--powerup-color, #00d4ff), transparent);
+  opacity: 0.7;
+}
+
+.powerup-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.powerup-card.locked {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+}
+
+.powerup-card.locked:hover {
+  transform: none;
+}
+
+.powerup-icon {
+  font-size: 3rem;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+
+.powerup-card:hover .powerup-icon {
+  transform: scale(1.15);
+}
+
+.powerup-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.powerup-desc {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  line-height: 1.3;
+  min-height: 40px;
+}
+
+.powerup-key {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.key-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #00d4ff;
+}
+
+.powerup-owned {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.owned-count {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #00ff88;
+}
+
+.powerup-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.powerup-price .diamond-icon {
+  font-size: 1.1rem;
+}
+
+.lock-info {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 100, 100, 0.8);
+}
+
+.powerup-buy-btn {
+  width: 100%;
+  padding: 10px 20px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.powerup-buy-btn.btn-buy {
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #000;
+}
+
+.powerup-buy-btn.btn-buy:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+}
+
+.powerup-buy-btn.btn-disabled {
+  background: rgba(100, 100, 100, 0.4);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.powerup-buy-btn.btn-locked {
+  background: rgba(80, 80, 80, 0.3);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+.powerup-hint {
+  margin-top: 20px;
+  padding: 16px 24px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+}
+
+.powerup-hint p {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Powerup Notification */
+.powerup-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.powerup-notification.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.powerup-notification.success {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.9), rgba(0, 200, 100, 0.9));
+  color: #000;
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+}
+
+.powerup-notification.error {
+  background: linear-gradient(135deg, rgba(255, 100, 100, 0.9), rgba(200, 50, 50, 0.9));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(255, 100, 100, 0.4);
+}
+
+/* ===== POWERUP INVENTORY HUD ===== */
+
+.powerup-inventory {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  z-index: 50;
+}
+
+.inventory-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.inventory-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.inventory-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inventory-item.active {
+  border-color: #00d4ff;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+  animation: inventoryPulse 1s ease-in-out infinite;
+}
+
+@keyframes inventoryPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.7); }
+}
+
+.inv-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.inv-key {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+
+.inv-count {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #00ff88;
+}
+
+.inv-count.empty {
+  color: rgba(255, 100, 100, 0.7);
+}
+
+/* Active powerup effect indicator */
+.powerup-effect-active {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.powerup-effect-active.slowmo {
+  border: 4px solid rgba(0, 212, 255, 0.5);
+  box-shadow: inset 0 0 50px rgba(0, 212, 255, 0.2);
+  animation: slowmoEffect 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes slowmoEffect {
+  0% { border-color: rgba(0, 212, 255, 0.3); }
+  100% { border-color: rgba(0, 212, 255, 0.6); }
+}
+
+.powerup-effect-active.shield {
+  border: 4px solid rgba(0, 255, 136, 0.5);
+  box-shadow: inset 0 0 60px rgba(0, 255, 136, 0.15);
+}
+
+.powerup-effect-active.fastforward {
+  background: linear-gradient(90deg, transparent, rgba(255, 200, 0, 0.1), transparent);
+  animation: fastforwardEffect 0.3s linear;
+}
+
+@keyframes fastforwardEffect {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Mobile responsive powerup styles */
+@media (max-width: 600px) {
+  .powerup-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 12px;
+  }
+  
+  .powerup-card {
+    padding: 16px 12px;
+  }
+  
+  .powerup-icon {
+    font-size: 2.5rem;
+  }
+  
+  .powerup-inventory {
+    bottom: 10px;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  
+  .inventory-item {
+    padding: 6px 10px;
+    min-width: 50px;
+  }
+  
+  .inv-icon {
+    font-size: 1.2rem;
+  }
+}

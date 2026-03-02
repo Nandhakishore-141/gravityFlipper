@@ -7,6 +7,7 @@ import { LEVELS } from '../config/levels.js';
 import { playSound } from '../core/audio.js';
 import * as dom from '../config/dom.js';
 import { renderColorGrid } from '../store/store.js';
+import { renderPowerupGrid } from '../store/powerupShop.js';
 
 // Callbacks
 let onStartLevel = null;
@@ -25,6 +26,7 @@ export function showScreen(screenName) {
   dom.levelScreen.classList.remove('active');
   dom.settingsScreen.classList.remove('active');
   dom.storeScreen.classList.remove('active');
+  dom.powerupShopScreen.classList.remove('active');
   dom.gameScreen.classList.remove('active');
   
   gameState.currentScreen = screenName;
@@ -42,6 +44,10 @@ export function showScreen(screenName) {
     case 'store':
       dom.storeScreen.classList.add('active');
       renderColorGrid();
+      break;
+    case 'powerupShop':
+      dom.powerupShopScreen.classList.add('active');
+      renderPowerupGrid();
       break;
     case 'game':
       dom.gameScreen.classList.add('active');

@@ -54,6 +54,19 @@ export const colorGrid = document.getElementById("colorGrid");
 export const previewBox = document.getElementById("previewBox");
 export const previewName = document.getElementById("previewName");
 
+// ==================== POWERUP SHOP ELEMENTS ====================
+export const powerupShopScreen = document.getElementById("powerupShopScreen");
+export const powerupShopBtn = document.getElementById("powerupShopBtn");
+export const powerupShopBackBtn = document.getElementById("powerupShopBackBtn");
+export const powerupGrid = document.getElementById("powerupGrid");
+export const powerupDiamonds = document.getElementById("powerupDiamonds");
+
+// ==================== POWERUP INVENTORY HUD ====================
+export const powerupInventory = document.getElementById("powerupInventory");
+export const invSlowmo = document.getElementById("invSlowmo");
+export const invShield = document.getElementById("invShield");
+export const invFastforward = document.getElementById("invFastforward");
+
 // ==================== OVERLAY ELEMENTS ====================
 export const pauseOverlay = document.getElementById("pauseOverlay");
 export const gameOverOverlay = document.getElementById("gameOverOverlay");

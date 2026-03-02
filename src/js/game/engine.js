@@ -12,6 +12,7 @@ import { checkCollisions } from './collisions.js';
 import { render } from './render.js';
 import * as controls from './controls.js';
 import { randInt } from '../utils/helpers.js';
+import * as powerupManager from './powerupManager.js';
 
 const { boundaryOffset, boundaryThickness, boxSize, cameraFollowX, baseGravityForce } = GAME_CONSTANTS;
 
@@ -214,6 +215,15 @@ function triggerHit() {
   const now = performance.now();
   if (now < hitUntil) return;
 
+  // Check if shield can block the hit
+  if (powerupManager.tryBlockWithShield()) {
+    // Shield blocked the hit - don't die
+    hitUntil = now + 500; // Brief invulnerability after shield block
+    dom.box.classList.add("hit");
+    setTimeout(() => dom.box.classList.remove("hit"), 300);
+    return;
+  }
+
   playSound('hit');
   
   hitUntil = now + 260;
@@ -314,6 +324,9 @@ export function startLevel(levelId) {
   lastTime = 0;
   levelStartTime = performance.now();
   
+  // Initialize powerup manager
+  powerupManager.initPowerupManager();
+  
   stopBackgroundMusic();
   startBackgroundMusic(0, 0);
   
@@ -359,6 +372,9 @@ export function restartLevel() {
   dom.gameOverOverlay.classList.add('hidden');
   dom.levelCompleteOverlay.classList.add('hidden');
   
+  // Reset active powerups
+  powerupManager.resetActivePowerups();
+  
   startLevel(gameState.currentLevel);
 }
 
@@ -367,6 +383,10 @@ export function restartLevel() {
  */
 export function nextLevel() {
   dom.levelCompleteOverlay.classList.add('hidden');
+  
+  // Reset active powerups
+  powerupManager.resetActivePowerups();
+  
   if (gameState.currentLevel < LEVELS.length) {
     startLevel(gameState.currentLevel + 1);
   }
@@ -379,6 +399,9 @@ export function quitToMenu(showScreenCallback) {
   dom.pauseOverlay.classList.add('hidden');
   dom.gameOverOverlay.classList.add('hidden');
   dom.levelCompleteOverlay.classList.add('hidden');
+  
+  // Reset active powerups
+  powerupManager.resetActivePowerups();
   
   isGameRunning = false;
   isPaused = false;
@@ -399,6 +422,30 @@ export function handleFlip() {
 }
 
 /**
+ * Handle powerup activation by key
+ */
+export function handlePowerupKey(key) {
+  if (!isGameRunning || isPaused) return;
+  
+  const effect = powerupManager.tryActivatePowerup(key);
+  if (!effect) return;
+  
+  // Handle fast forward teleport
+  if (effect.type === 'fastforward') {
+    // Teleport 150m forward (in camera units)
+    const teleportUnits = effect.teleportDistance * 10; // Convert meters to game units
+    cameraX += teleportUnits;
+    obstacles.setCameraX(cameraX);
+    
+    // Update distance display
+    currentDistance = Math.floor(cameraX * 0.1);
+    dom.distanceDisplay.textContent = currentDistance;
+    updateProgress();
+    checkLevelComplete();
+  }
+}
+
+/**
  * Main game loop
  */
 function loop(timestamp) {
@@ -415,9 +462,16 @@ function loop(timestamp) {
       return;
     }
     
+    // Get powerup effects
+    const powerupEffects = powerupManager.updatePowerups();
+    
     const frameDelta = Math.min(50, timestamp - lastTime);
     let dt = frameDelta / 16.6667;
     dt = Math.min(dt, 2.5);
+    
+    // Apply slowmo effect to delta time
+    dt *= powerupEffects.speedMultiplier;
+    
     lastTime = timestamp;
 
     runElapsedMs += frameDelta;

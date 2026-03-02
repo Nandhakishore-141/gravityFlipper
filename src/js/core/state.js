@@ -14,6 +14,14 @@ const DEFAULT_STATE = {
   selectedColor: 'cyan',
   equippedColor: 'cyan',
   purchasedColors: ['cyan'], // Cyan is free by default
+  // Powerups inventory (count of each powerup owned)
+  powerups: {
+    slowmo: 0,
+    shield: 0,
+    fastforward: 0
+  },
+  // Powerups unlocked (based on total distance)
+  unlockedPowerups: [],
   settings: {
     soundVolume: 100,
     musicVolume: 100,
@@ -49,6 +57,16 @@ export function loadGameState() {
       // Ensure totalDiamonds exists
       if (typeof gameState.totalDiamonds !== 'number') {
         gameState.totalDiamonds = 0;
+      }
+      
+      // Ensure powerups object exists
+      if (!gameState.powerups) {
+        gameState.powerups = { slowmo: 0, shield: 0, fastforward: 0 };
+      }
+      
+      // Ensure unlockedPowerups array exists
+      if (!gameState.unlockedPowerups) {
+        gameState.unlockedPowerups = [];
       }
     }
     return gameState;
@@ -173,4 +191,58 @@ export function updateHighScore(newScore) {
 export function updateTotalDistance(distance) {
   gameState.totalDistance += distance;
   saveGameState();
+}
+
+// ==================== POWERUP MANAGEMENT ====================
+
+// Check if powerup is unlocked (based on total distance)
+export function isPowerupUnlocked(powerupId, unlockDistance) {
+  return gameState.totalDistance >= unlockDistance || 
+         (gameState.unlockedPowerups && gameState.unlockedPowerups.includes(powerupId));
+}
+
+// Unlock a powerup
+export function unlockPowerup(powerupId) {
+  if (!gameState.unlockedPowerups) {
+    gameState.unlockedPowerups = [];
+  }
+  if (!gameState.unlockedPowerups.includes(powerupId)) {
+    gameState.unlockedPowerups.push(powerupId);
+    saveGameState();
+  }
+}
+
+// Get powerup count
+export function getPowerupCount(powerupId) {
+  if (!gameState.powerups) {
+    gameState.powerups = { slowmo: 0, shield: 0, fastforward: 0 };
+  }
+  return gameState.powerups[powerupId] || 0;
+}
+
+// Purchase a powerup (returns true if successful)
+export function purchasePowerup(powerupId, price) {
+  if (gameState.totalDiamonds < price) {
+    return false;
+  }
+  
+  if (!gameState.powerups) {
+    gameState.powerups = { slowmo: 0, shield: 0, fastforward: 0 };
+  }
+  
+  gameState.totalDiamonds -= price;
+  gameState.powerups[powerupId] = (gameState.powerups[powerupId] || 0) + 1;
+  saveGameState();
+  return true;
+}
+
+// Use a powerup (returns true if successful)
+export function usePowerup(powerupId) {
+  if (!gameState.powerups || gameState.powerups[powerupId] <= 0) {
+    return false;
+  }
+  
+  gameState.powerups[powerupId]--;
+  saveGameState();
+  return true;
 }

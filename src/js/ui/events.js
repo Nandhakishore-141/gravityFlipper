@@ -30,6 +30,16 @@ export function initEventListeners() {
     showScreen('levels'); 
   });
 
+  // Powerup shop navigation
+  dom.powerupShopBtn.addEventListener('click', () => { 
+    playSound('click'); 
+    showScreen('powerupShop'); 
+  });
+  dom.powerupShopBackBtn.addEventListener('click', () => { 
+    playSound('click'); 
+    showScreen('levels'); 
+  });
+
   // Settings volume sliders
   dom.soundVolume.addEventListener('input', (e) => {
     gameState.settings.soundVolume = parseInt(e.target.value);
@@ -260,6 +270,22 @@ function handleKeyDown(event) {
     }
   }
   
+  // Powerup keys (Q, S, F)
+  const powerupKeys = ['q', 's', 'f'];
+  if (powerupKeys.includes(event.key.toLowerCase()) && !event.repeat) {
+    const state = engine.getGameState();
+    
+    if (gameState.currentScreen === 'game' && state.isGameRunning && !state.isPaused) {
+      const anyOverlayVisible = !dom.pauseOverlay.classList.contains('hidden') ||
+                                !dom.gameOverOverlay.classList.contains('hidden') ||
+                                !dom.levelCompleteOverlay.classList.contains('hidden');
+      
+      if (!anyOverlayVisible) {
+        engine.handlePowerupKey(event.key.toLowerCase());
+      }
+    }
+  }
+  
   if (event.key === 'Escape') {
     const state = engine.getGameState();
     
@@ -269,7 +295,7 @@ function handleKeyDown(event) {
       } else {
         engine.pauseGame();
       }
-    } else if (gameState.currentScreen === 'settings' || gameState.currentScreen === 'store') {
+    } else if (gameState.currentScreen === 'settings' || gameState.currentScreen === 'store' || gameState.currentScreen === 'powerupShop') {
       showScreen('levels');
     }
   }

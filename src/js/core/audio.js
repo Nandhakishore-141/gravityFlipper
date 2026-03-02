@@ -119,6 +119,29 @@ export function playSound(type) {
         oscillator.stop(now + 0.25);
         break;
         
+      case 'shieldBlock':
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(600, now);
+        oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+        gainNode.gain.setValueAtTime(0.5, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        oscillator.start(now);
+        oscillator.stop(now + 0.15);
+        // Add second tone for impact effect
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(800, ctx.currentTime);
+          gain2.gain.setValueAtTime(0.3 * volume, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+          osc2.start(ctx.currentTime);
+          osc2.stop(ctx.currentTime + 0.1);
+        }, 100);
+        break;
+        
       case 'levelComplete':
         [523, 659, 784, 1047].forEach((freq, i) => {
           setTimeout(() => {
