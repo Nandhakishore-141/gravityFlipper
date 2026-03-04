@@ -4,6 +4,15 @@
 
 import { GAME_CONSTANTS } from '../config/constants.js';
 import { topSpikes, bottomSpikes, walls, collectibles } from './obstacles.js';
+import { 
+  lavaZones, 
+  portals, 
+  movingWalls, 
+  shooters, 
+  gravityZones, 
+  aliens,
+  projectiles
+} from './specialObstacles.js';
 import * as dom from '../config/dom.js';
 
 const { cameraFollowX } = GAME_CONSTANTS;
@@ -41,5 +50,45 @@ export function render({ y, cameraX, playerX }) {
     if (!c.collected) {
       c.el.style.transform = `translate3d(${c.x - cameraX}px, ${c.y}px, 0)`;
     }
+  }
+}
+
+/**
+ * Render special obstacles
+ */
+export function renderSpecialObstacles(cameraX) {
+  // Render lava zones
+  for (const lava of lavaZones) {
+    lava.el.style.transform = `translate3d(${lava.x - cameraX}px, 0, 0)`;
+  }
+  
+  // Render portals
+  for (const portal of portals) {
+    portal.el.style.transform = `translate3d(${portal.x - cameraX}px, ${portal.y}px, 0)`;
+  }
+  
+  // Render moving walls
+  for (const wall of movingWalls) {
+    wall.el.style.transform = `translate3d(${wall.x - cameraX}px, ${wall.y}px, 0)`;
+  }
+  
+  // Render shooters
+  for (const shooter of shooters) {
+    shooter.el.style.transform = `translate3d(${shooter.x - cameraX}px, 0, 0)`;
+  }
+  
+  // Render gravity zones
+  for (const zone of gravityZones) {
+    zone.el.style.transform = `translate3d(${zone.x - cameraX}px, ${zone.y}px, 0)`;
+  }
+  
+  // Render aliens
+  for (const alien of aliens) {
+    alien.el.style.transform = `translate3d(${alien.x - cameraX}px, ${alien.y}px, 0)`;
+  }
+  
+  // Render projectiles
+  for (const proj of projectiles) {
+    proj.el.style.transform = `translate3d(${proj.x - cameraX}px, ${proj.y}px, 0)`;
   }
 }

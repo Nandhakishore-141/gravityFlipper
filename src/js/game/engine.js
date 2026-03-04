@@ -4,12 +4,14 @@
 
 import { GAME_CONSTANTS } from '../config/constants.js';
 import { LEVELS } from '../config/levels.js';
-import { gameState, saveGameState } from '../core/state.js';
+import { getUniverseById } from '../config/universes.js';
+import { gameState, saveGameState, incrementLevelAttempts, getLevelAttempts, checkUniverseCompletion } from '../core/state.js';
 import { playSound, startBackgroundMusic, stopBackgroundMusic, pauseBackgroundMusic, resumeBackgroundMusic } from '../core/audio.js';
 import * as dom from '../config/dom.js';
 import * as obstacles from './obstacles.js';
+import * as specialObstacles from './specialObstacles.js';
 import { checkCollisions } from './collisions.js';
-import { render } from './render.js';
+import { render, renderSpecialObstacles } from './render.js';
 import * as controls from './controls.js';
 import { randInt } from '../utils/helpers.js';
 import * as powerupManager from './powerupManager.js';
@@ -82,6 +84,31 @@ export function resizeGame() {
   }
   
   obstacles.setDimensions({ minY, maxY, gameWidth, gameHeight });
+  specialObstacles.setSpecialDimensions({ minY, maxY, gameWidth, gameHeight });
+}
+
+/**
+ * Apply universe theme to game
+ */
+function applyUniverseTheme(universeId) {
+  const universe = getUniverseById(universeId);
+  if (!universe) return;
+  
+  // Remove all universe classes
+  for (let i = 1; i <= 8; i++) {
+    dom.game.classList.remove(`universe-${i}`);
+  }
+  
+  // Add current universe class
+  dom.game.classList.add(`universe-${universeId}`);
+  
+  // Apply background theme
+  dom.game.style.background = universe.theme.background;
+  
+  // Update CSS custom properties for dynamic theming
+  document.documentElement.style.setProperty('--universe-primary', universe.theme.primary);
+  document.documentElement.style.setProperty('--universe-secondary', universe.theme.secondary);
+  document.documentElement.style.setProperty('--universe-glow', universe.theme.trapGlow);
 }
 
 /**
@@ -94,6 +121,9 @@ export function initWorld() {
 
   obstacles.clearObstacles();
   obstacles.resetSpawnPositions();
+  
+  // Initialize special obstacles for this level
+  specialObstacles.initSpecialObstacles(level.specialObstacle);
   
   // Generate initial obstacles
   for (let i = 0; i < 36; i++) {
@@ -294,6 +324,9 @@ function levelComplete() {
   
   saveGameState();
   
+  // Check if universe is complete
+  checkUniverseCompletion();
+  
   dom.lcScore.textContent = score;
   dom.lcDistance.textContent = currentDistance + 'm';
   dom.lcTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -318,6 +351,17 @@ export function startLevel(levelId) {
   }
   
   gameState.currentLevel = levelId;
+  
+  // Get current level and apply universe theme
+  const level = LEVELS[levelId - 1];
+  if (level) {
+    applyUniverseTheme(level.universeId);
+  }
+  
+  // Increment and display attempts for this level
+  const attempts = incrementLevelAttempts(levelId);
+  dom.attemptsDisplay.textContent = attempts;
+  
   initWorld();
   isPaused = false;
   isGameRunning = true;
@@ -482,11 +526,25 @@ function loop(timestamp) {
     
     cameraX += currentHorizontalSpeed * dt;
     obstacles.setCameraX(cameraX);
+    specialObstacles.setSpecialCameraX(cameraX);
+    
+    // Update special obstacles
+    const level2 = LEVELS[gameState.currentLevel - 1];
+    if (level2 && level2.specialObstacle) {
+      specialObstacles.updateSpecialObstacles(level2.specialObstacle, timestamp);
+    }
 
-    const vy = controls.getVelocity();
-    const gravity = controls.getGravity();
-    controls.setVelocity(vy + gravity * dt);
-    y += controls.getVelocity() * dt;
+    // Check if fast forward is active - maintain straight line movement
+    const ffActive = powerupEffects.fastforwardActive;
+    
+    if (!ffActive) {
+      // Normal gravity physics
+      const vy = controls.getVelocity();
+      const gravity = controls.getGravity();
+      controls.setVelocity(vy + gravity * dt);
+      y += controls.getVelocity() * dt;
+    }
+    // When fast forward is active, y stays constant (straight line)
     
     // Update global y for trail effects
     window._gameY = y;
@@ -515,7 +573,7 @@ function loop(timestamp) {
     dom.distanceDisplay.textContent = currentDistance;
     updateProgress();
     
-    checkCollisions({
+    const collisionResult = checkCollisions({
       playerX,
       y,
       cameraX,
@@ -530,7 +588,25 @@ function loop(timestamp) {
       }
     });
     
+    // Handle portal teleportation
+    if (collisionResult.teleportY !== undefined && collisionResult.teleportY !== null) {
+      y = collisionResult.teleportY;
+      playSound('collect'); // Portal sound
+    }
+    
+    // Handle gravity zones
+    if (collisionResult.gravityModifier && collisionResult.gravityModifier !== 1 && !ffActive) {
+      const vy = controls.getVelocity();
+      controls.setVelocity(vy * collisionResult.gravityModifier);
+    }
+    
     render({ y, cameraX, playerX });
+    
+    // Render special obstacles
+    const level3 = LEVELS[gameState.currentLevel - 1];
+    if (level3 && level3.specialObstacle) {
+      renderSpecialObstacles(cameraX);
+    }
   } catch (error) {
     console.error('Game loop error:', error);
   }

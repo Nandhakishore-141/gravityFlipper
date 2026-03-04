@@ -5,12 +5,15 @@ import { BOX_COLORS } from '../config/colors.js';
 const DEFAULT_STATE = {
   currentScreen: 'levels',
   currentLevel: 1,
+  currentUniverse: 1,
   score: 0,
   highScore: 0,
   totalDistance: 0,
   totalDiamonds: 0,
   levelCompleted: {},
   unlockedLevels: [1],
+  unlockedUniverses: [1], // Track unlocked universes
+  levelAttempts: {}, // Track attempts per level
   selectedColor: 'cyan',
   equippedColor: 'cyan',
   purchasedColors: ['cyan'], // Cyan is free by default
@@ -67,6 +70,21 @@ export function loadGameState() {
       // Ensure unlockedPowerups array exists
       if (!gameState.unlockedPowerups) {
         gameState.unlockedPowerups = [];
+      }
+      
+      // Ensure levelAttempts object exists
+      if (!gameState.levelAttempts) {
+        gameState.levelAttempts = {};
+      }
+      
+      // Ensure unlockedUniverses array exists
+      if (!gameState.unlockedUniverses) {
+        gameState.unlockedUniverses = [1];
+      }
+      
+      // Ensure currentUniverse exists
+      if (!gameState.currentUniverse) {
+        gameState.currentUniverse = 1;
       }
     }
     return gameState;
@@ -245,4 +263,80 @@ export function usePowerup(powerupId) {
   gameState.powerups[powerupId]--;
   saveGameState();
   return true;
+}
+
+// ==================== LEVEL ATTEMPTS MANAGEMENT ====================
+
+// Get attempts for a level
+export function getLevelAttempts(levelId) {
+  if (!gameState.levelAttempts) {
+    gameState.levelAttempts = {};
+  }
+  return gameState.levelAttempts[levelId] || 0;
+}
+
+// Increment attempts for a level
+export function incrementLevelAttempts(levelId) {
+  if (!gameState.levelAttempts) {
+    gameState.levelAttempts = {};
+  }
+  gameState.levelAttempts[levelId] = (gameState.levelAttempts[levelId] || 0) + 1;
+  saveGameState();
+  return gameState.levelAttempts[levelId];
+}
+
+// ==================== UNIVERSE MANAGEMENT ====================
+
+// Set current universe
+export function setCurrentUniverse(universeId) {
+  gameState.currentUniverse = universeId;
+  saveGameState();
+}
+
+// Get current universe
+export function getCurrentUniverse() {
+  return gameState.currentUniverse || 1;
+}
+
+// Unlock a universe
+export function unlockUniverse(universeId) {
+  if (!gameState.unlockedUniverses) {
+    gameState.unlockedUniverses = [1];
+  }
+  if (!gameState.unlockedUniverses.includes(universeId)) {
+    gameState.unlockedUniverses.push(universeId);
+    saveGameState();
+  }
+}
+
+// Check if universe is unlocked
+export function isUniverseUnlocked(universeId) {
+  if (!gameState.unlockedUniverses) {
+    gameState.unlockedUniverses = [1];
+  }
+  return gameState.unlockedUniverses.includes(universeId);
+}
+
+// Check and unlock next universe if all levels in current universe are completed
+export function checkUniverseCompletion() {
+  const LEVELS_PER_UNIVERSE = 12;
+  const currentLevel = gameState.currentLevel;
+  const universeId = Math.ceil(currentLevel / LEVELS_PER_UNIVERSE);
+  
+  const startLevel = (universeId - 1) * LEVELS_PER_UNIVERSE + 1;
+  const endLevel = universeId * LEVELS_PER_UNIVERSE;
+  
+  let allCompleted = true;
+  for (let levelId = startLevel; levelId <= endLevel; levelId++) {
+    if (!gameState.levelCompleted[levelId]) {
+      allCompleted = false;
+      break;
+    }
+  }
+  
+  if (allCompleted && universeId < 8) {
+    unlockUniverse(universeId + 1);
+    return universeId + 1; // Return newly unlocked universe
+  }
+  return null;
 }

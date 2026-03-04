@@ -35,7 +35,27 @@
       <button class="settings-icon-btn" id="storeBtn">🎨</button>
       <button class="settings-icon-btn" id="settingsBtn">⚙</button>
     </div>
-    <p class="level-hint">Select a level to play</p>
+    
+    <!-- Universe Selector -->
+    <div class="universe-selector" id="universeSelector">
+      <button class="universe-nav-btn" id="prevUniverseBtn">‹</button>
+      <div class="universe-display">
+        <span class="universe-icon" id="universeIcon">🌌</span>
+        <div class="universe-info">
+          <h2 class="universe-name" id="universeName">Nebula</h2>
+          <p class="universe-desc" id="universeDesc">The beginning of your journey</p>
+          <div class="universe-progress">
+            <span class="progress-text" id="universeProgress">0/12 completed</span>
+            <div class="progress-bar-mini">
+              <div class="progress-fill-mini" id="universeProgressFill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="universe-nav-btn" id="nextUniverseBtn">›</button>
+    </div>
+    
+    <p class="level-hint" id="levelHint">Select a level to play</p>
     <div class="level-grid" id="levelGrid"></div>
   </div>
 
@@ -134,6 +154,12 @@
       <div class="walls" id="walls" aria-hidden="true"></div>
       <div class="collectibles" id="collectibles" aria-hidden="true"></div>
       <div class="portals" id="portals" aria-hidden="true"></div>
+      <div class="lava-zones" id="lavaZones" aria-hidden="true"></div>
+      <div class="moving-walls" id="movingWalls" aria-hidden="true"></div>
+      <div class="shooters" id="shooters" aria-hidden="true"></div>
+      <div class="gravity-zones" id="gravityZones" aria-hidden="true"></div>
+      <div class="aliens" id="aliens" aria-hidden="true"></div>
+      <div class="projectiles" id="projectiles" aria-hidden="true"></div>
       <div class="powerups" id="powerups" aria-hidden="true"></div>
       <div class="box-wrap" id="boxWrap">
         <div class="box" id="box">
@@ -148,6 +174,10 @@
           <div class="level-indicator">
             <span class="level-label">LEVEL</span>
             <span class="level-number" id="currentLevel">1</span>
+          </div>
+          <div class="attempts-indicator">
+            <span class="attempts-label">ATTEMPTS</span>
+            <span class="attempts-number" id="attemptsDisplay">0</span>
           </div>
         </div>
         <div class="hud-center">

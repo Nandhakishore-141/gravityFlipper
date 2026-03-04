@@ -6,7 +6,7 @@
 import { loadGameState } from './core/state.js';
 import { unlockAudio } from './core/audio.js';
 import * as dom from './config/dom.js';
-import { showScreen, setCallbacks as setScreenCallbacks, updateHomeStats, renderLevelGrid } from './ui/screens.js';
+import { showScreen, setCallbacks as setScreenCallbacks, updateHomeStats, renderLevelGrid, initUniverseNavigation } from './ui/screens.js';
 import { createBackgroundParticles } from './ui/particles.js';
 import { initEventListeners } from './ui/events.js';
 import { startLevel, setCallbacks as setEngineCallbacks } from './game/engine.js';
@@ -54,6 +54,9 @@ export function initApp() {
   
   // Initialize event listeners
   initEventListeners();
+  
+  // Initialize universe navigation
+  initUniverseNavigation();
   
   // Create background particles
   createBackgroundParticles();

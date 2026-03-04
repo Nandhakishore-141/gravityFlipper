@@ -5,6 +5,14 @@
 import { intersects } from '../utils/helpers.js';
 import { GAME_CONSTANTS } from '../config/constants.js';
 import { topSpikes, bottomSpikes, walls, collectibles } from './obstacles.js';
+import { 
+  lavaZones, 
+  movingWalls, 
+  projectiles, 
+  aliens,
+  checkPortalCollision,
+  getGravityModifier
+} from './specialObstacles.js';
 
 const { boundaryOffset, boxSize } = GAME_CONSTANTS;
 
@@ -76,5 +84,56 @@ export function checkCollisions({ playerX, y, cameraX, gameWidth, gameHeight, bo
     }
   }
 
-  return { hit: false };
+  // Check lava zone collisions
+  for (const lava of lavaZones) {
+    const lx = lava.x - cameraX;
+    if (lx < -300 || lx > gameWidth + 100) continue;
+    
+    if (intersects(hitPx, hitPy, hitW, hitH, lx, lava.y, lava.width, lava.height)) {
+      if (onHit) onHit();
+      return { hit: true };
+    }
+  }
+
+  // Check moving wall collisions
+  for (const wall of movingWalls) {
+    const wx = wall.x - cameraX;
+    if (wx < -100 || wx > gameWidth + 100) continue;
+    
+    if (intersects(hitPx, hitPy, hitW, hitH, wx, wall.y, wall.width, wall.height)) {
+      if (onHit) onHit();
+      return { hit: true };
+    }
+  }
+
+  // Check projectile collisions
+  for (const proj of projectiles) {
+    const projX = proj.x - cameraX;
+    if (intersects(hitPx, hitPy, hitW, hitH, projX, proj.y, proj.width, proj.height)) {
+      if (onHit) onHit();
+      return { hit: true };
+    }
+  }
+
+  // Check alien collisions
+  for (const alien of aliens) {
+    const ax = alien.x - cameraX;
+    if (ax < -100 || ax > gameWidth + 100) continue;
+    
+    if (intersects(hitPx, hitPy, hitW, hitH, ax, alien.y, alien.width, alien.height)) {
+      if (onHit) onHit();
+      return { hit: true };
+    }
+  }
+
+  // Check portal collision (teleport effect)
+  const portalTargetY = checkPortalCollision(px + cameraX, py, boxWidth, boxHeight);
+  if (portalTargetY !== null) {
+    return { hit: false, teleportY: portalTargetY };
+  }
+
+  // Get gravity modifier from gravity zones
+  const gravityMod = getGravityModifier(px + cameraX, py, boxWidth, boxHeight);
+
+  return { hit: false, gravityModifier: gravityMod };
 }

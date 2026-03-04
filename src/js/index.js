@@ -8,6 +8,7 @@ export * from './config/colors.js';
 export * from './config/levels.js';
 export * from './config/constants.js';
 export * from './config/dom.js';
+export * from './config/universes.js';
 
 // Core
 export * from './core/state.js';

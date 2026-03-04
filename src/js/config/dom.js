@@ -16,9 +16,19 @@ export const spikesBottomContainer = document.getElementById("spikesBottom");
 export const wallsContainer = document.getElementById("walls");
 export const collectiblesContainer = document.getElementById("collectibles");
 
+// ==================== SPECIAL OBSTACLES ====================
+export const portalsContainer = document.getElementById("portals");
+export const lavaZonesContainer = document.getElementById("lavaZones");
+export const movingWallsContainer = document.getElementById("movingWalls");
+export const shootersContainer = document.getElementById("shooters");
+export const gravityZonesContainer = document.getElementById("gravityZones");
+export const aliensContainer = document.getElementById("aliens");
+export const projectilesContainer = document.getElementById("projectiles");
+
 // ==================== HUD ELEMENTS ====================
 export const scoreDisplay = document.getElementById("scoreDisplay");
 export const currentLevelDisplay = document.getElementById("currentLevel");
+export const attemptsDisplay = document.getElementById("attemptsDisplay");
 export const comboDisplay = document.getElementById("comboDisplay");
 export const comboValue = document.getElementById("comboValue");
 export const progressFill = document.getElementById("progressFill");
@@ -34,6 +44,17 @@ export const totalDistanceDisplay = document.getElementById("totalDistance");
 export const settingsBtn = document.getElementById("settingsBtn");
 export const settingsBackBtn = document.getElementById("settingsBackBtn");
 export const levelGrid = document.getElementById("levelGrid");
+export const levelHint = document.getElementById("levelHint");
+
+// ==================== UNIVERSE SELECTOR ELEMENTS ====================
+export const universeSelector = document.getElementById("universeSelector");
+export const prevUniverseBtn = document.getElementById("prevUniverseBtn");
+export const nextUniverseBtn = document.getElementById("nextUniverseBtn");
+export const universeIcon = document.getElementById("universeIcon");
+export const universeName = document.getElementById("universeName");
+export const universeDesc = document.getElementById("universeDesc");
+export const universeProgress = document.getElementById("universeProgress");
+export const universeProgressFill = document.getElementById("universeProgressFill");
 
 // ==================== SETTINGS ELEMENTS ====================
 export const soundVolume = document.getElementById("soundVolume");

@@ -1,5 +1,5 @@
 // ==================== STORE MODULE ====================
-import { BOX_COLORS, RAINBOW_COLORS, getColorById, adjustColor } from '../config/colors.js';
+import { BOX_COLORS, RAINBOW_COLORS, getColorById, adjustColor, getAnimationClass, ANIMATION_TIERS } from '../config/colors.js';
 import { RAINBOW_INTERVAL } from '../config/constants.js';
 import { 
   gameState, 
@@ -239,6 +239,15 @@ export function applyBoxColor() {
   
   const colorId = getEquippedColor();
   const colorData = getColorById(colorId);
+  
+  // Remove all animation classes first
+  Object.values(ANIMATION_TIERS).forEach(tier => {
+    box.classList.remove(tier.className);
+  });
+  
+  // Apply the animation class for this color's tier
+  const animClass = getAnimationClass(colorId);
+  box.classList.add(animClass);
   
   if (colorData.isRainbow) {
     startRainbowAnimation();

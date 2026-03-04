@@ -1,237 +1,169 @@
 // ==================== LEVEL DEFINITIONS ====================
+// 8 Universes × 12 Levels = 96 Total Levels
+// Each universe gets progressively harder
 
-export const LEVELS = [
-  { 
-    id: 1, 
-    name: "Beginner", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 650, 
-    spikeGapMax: 850, 
-    wallGapMin: 1600, 
-    wallGapMax: 2000, 
-    targetScore: 8, 
-    star1: 4, 
-    star2: 6, 
-    star3: 8, 
-    hasWalls: false, 
-    hasPowerups: false, 
-    hasCollectibles: true, 
-    collectibleRate: 0.5 
+import { LEVELS_PER_UNIVERSE } from './universes.js';
+
+// Base level templates for each universe
+// Each universe has a special obstacle type
+const UNIVERSE_CONFIGS = [
+  // Universe 1: Nebula (Beginner friendly) - No special obstacles
+  {
+    universeId: 1,
+    baseSpeed: { min: 4, max: 7 },
+    spikeGap: { min: 850, max: 1100 },
+    wallGap: { min: 2000, max: 2500 },
+    hasWalls: false,
+    hasPowerups: false,
+    specialObstacle: null
   },
-  { 
-    id: 2, 
-    name: "Easy", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 620, 
-    spikeGapMax: 820, 
-    wallGapMin: 1500, 
-    wallGapMax: 1900, 
-    targetScore: 12, 
-    star1: 5, 
-    star2: 9, 
-    star3: 12, 
-    hasWalls: false, 
-    hasPowerups: false, 
-    hasCollectibles: true, 
-    collectibleRate: 0.5 
+  // Universe 2: Solar Flare - Lava floor zones
+  {
+    universeId: 2,
+    baseSpeed: { min: 4, max: 8 },
+    spikeGap: { min: 750, max: 1000 },
+    wallGap: { min: 1800, max: 2200 },
+    hasWalls: false,
+    hasPowerups: true,
+    specialObstacle: 'lava'
   },
-  { 
-    id: 3, 
-    name: "Warming Up", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 600, 
-    spikeGapMax: 800, 
-    wallGapMin: 1400, 
-    wallGapMax: 1800, 
-    targetScore: 14, 
-    star1: 6, 
-    star2: 11, 
-    star3: 14, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.55 
+  // Universe 3: Void Realm - Teleport portals (send back)
+  {
+    universeId: 3,
+    baseSpeed: { min: 4.5, max: 8.5 },
+    spikeGap: { min: 700, max: 950 },
+    wallGap: { min: 1600, max: 2000 },
+    hasWalls: true,
+    hasPowerups: true,
+    specialObstacle: 'portal'
   },
-  { 
-    id: 4, 
-    name: "Getting Tricky", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 580, 
-    spikeGapMax: 780, 
-    wallGapMin: 1350, 
-    wallGapMax: 1750, 
-    targetScore: 16, 
-    star1: 7, 
-    star2: 13, 
-    star3: 16, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.55 
+  // Universe 4: Crystal Dimension - Moving crystal walls
+  {
+    universeId: 4,
+    baseSpeed: { min: 5, max: 9 },
+    spikeGap: { min: 650, max: 900 },
+    wallGap: { min: 1400, max: 1800 },
+    hasWalls: true,
+    hasPowerups: true,
+    specialObstacle: 'movingWall'
   },
-  { 
-    id: 5, 
-    name: "Speedy", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 560, 
-    spikeGapMax: 760, 
-    wallGapMin: 1300, 
-    wallGapMax: 1700, 
-    targetScore: 20, 
-    star1: 9, 
-    star2: 15, 
-    star3: 20, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.6 
+  // Universe 5: Plasma Storm - Electric shooting hazards
+  {
+    universeId: 5,
+    baseSpeed: { min: 5.5, max: 10 },
+    spikeGap: { min: 600, max: 850 },
+    wallGap: { min: 1200, max: 1600 },
+    hasWalls: true,
+    hasPowerups: true,
+    specialObstacle: 'shooter'
   },
-  { 
-    id: 6, 
-    name: "Intense", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 540, 
-    spikeGapMax: 740, 
-    wallGapMin: 1250, 
-    wallGapMax: 1650, 
-    targetScore: 24, 
-    star1: 11, 
-    star2: 18, 
-    star3: 24, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.6 
+  // Universe 6: Frozen Cosmos - High gravity zones
+  {
+    universeId: 6,
+    baseSpeed: { min: 6, max: 11 },
+    spikeGap: { min: 550, max: 800 },
+    wallGap: { min: 1000, max: 1400 },
+    hasWalls: true,
+    hasPowerups: true,
+    specialObstacle: 'gravity'
   },
-  { 
-    id: 7, 
-    name: "Challenging", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 520, 
-    spikeGapMax: 720, 
-    wallGapMin: 1200, 
-    wallGapMax: 1600, 
-    targetScore: 28, 
-    star1: 13, 
-    star2: 22, 
-    star3: 28, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.65 
+  // Universe 7: Crimson Galaxy - Alien shooters
+  {
+    universeId: 7,
+    baseSpeed: { min: 6.5, max: 12 },
+    spikeGap: { min: 500, max: 750 },
+    wallGap: { min: 900, max: 1300 },
+    hasWalls: true,
+    hasPowerups: true,
+    specialObstacle: 'alien'
   },
-  { 
-    id: 8, 
-    name: "Hard", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 500, 
-    spikeGapMax: 700, 
-    wallGapMin: 1150, 
-    wallGapMax: 1550, 
-    targetScore: 32, 
-    star1: 15, 
-    star2: 25, 
-    star3: 32, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.65 
-  },
-  { 
-    id: 9, 
-    name: "Expert", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 480, 
-    spikeGapMax: 680, 
-    wallGapMin: 1100, 
-    wallGapMax: 1500, 
-    targetScore: 36, 
-    star1: 17, 
-    star2: 28, 
-    star3: 36, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.7 
-  },
-  { 
-    id: 10, 
-    name: "Master", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 460, 
-    spikeGapMax: 660, 
-    wallGapMin: 1050, 
-    wallGapMax: 1450, 
-    targetScore: 40, 
-    star1: 19, 
-    star2: 31, 
-    star3: 40, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.7 
-  },
-  { 
-    id: 11, 
-    name: "Insane", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 440, 
-    spikeGapMax: 640, 
-    wallGapMin: 1000, 
-    wallGapMax: 1400, 
-    targetScore: 48, 
-    star1: 22, 
-    star2: 37, 
-    star3: 48, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.75 
-  },
-  { 
-    id: 12, 
-    name: "Impossible", 
-    distance: 1000, 
-    minSpeed: 5, 
-    maxSpeed: 12, 
-    spikeGapMin: 420, 
-    spikeGapMax: 620, 
-    wallGapMin: 950, 
-    wallGapMax: 1350, 
-    targetScore: 56, 
-    star1: 25, 
-    star2: 42, 
-    star3: 56, 
-    hasWalls: true, 
-    hasPowerups: true, 
-    hasCollectibles: true, 
-    collectibleRate: 0.8 
+  // Universe 8: Infinity Core - All hazards combined
+  {
+    universeId: 8,
+    baseSpeed: { min: 7, max: 14 },
+    spikeGap: { min: 450, max: 700 },
+    wallGap: { min: 800, max: 1200 },
+    hasWalls: true,
+    hasPowerups: true,
+    specialObstacle: 'all'
   }
 ];
+
+// Level names for each position in universe (1-12)
+const LEVEL_NAMES = [
+  "Awakening",
+  "First Steps",
+  "Rising",
+  "Momentum",
+  "Breakthrough",
+  "Ascension",
+  "Trials",
+  "Tempest",
+  "Crucible",
+  "Apex",
+  "Transcendence",
+  "Finale"
+];
+
+// Generate all 96 levels
+function generateLevels() {
+  const levels = [];
+  
+  UNIVERSE_CONFIGS.forEach((config, universeIndex) => {
+    for (let levelInUniverse = 0; levelInUniverse < LEVELS_PER_UNIVERSE; levelInUniverse++) {
+      const globalLevelId = universeIndex * LEVELS_PER_UNIVERSE + levelInUniverse + 1;
+      const progressInUniverse = levelInUniverse / (LEVELS_PER_UNIVERSE - 1); // 0 to 1
+      
+      // Gentle difficulty curve - first 3 levels are much easier
+      let difficultyMod = 0;
+      if (levelInUniverse >= 3) {
+        difficultyMod = ((levelInUniverse - 3) / 8) * 0.3; // Gradual increase from level 4+
+      }
+      
+      // Early level ease bonus (levels 1-3 get extra gaps)
+      const earlyLevelBonus = levelInUniverse < 3 ? (3 - levelInUniverse) * 150 : 0;
+      
+      // Speed scales very gently for early levels
+      const speedProgress = levelInUniverse < 3 ? 0 : (levelInUniverse - 3) / 9;
+      
+      const level = {
+        id: globalLevelId,
+        universeId: config.universeId,
+        levelInUniverse: levelInUniverse + 1,
+        name: LEVEL_NAMES[levelInUniverse],
+        distance: 500 + (universeIndex * 100) + (levelInUniverse * 80), // Shorter distances
+        minSpeed: config.baseSpeed.min + (speedProgress * 1.5),
+        maxSpeed: config.baseSpeed.max + (speedProgress * 2),
+        spikeGapMin: Math.round(config.spikeGap.min + earlyLevelBonus - (difficultyMod * 80)),
+        spikeGapMax: Math.round(config.spikeGap.max + earlyLevelBonus - (difficultyMod * 80)),
+        wallGapMin: Math.round(config.wallGap.min + earlyLevelBonus - (difficultyMod * 150)),
+        wallGapMax: Math.round(config.wallGap.max + earlyLevelBonus - (difficultyMod * 150)),
+        targetScore: 5 + (universeIndex * 5) + (levelInUniverse * 3),
+        star1: Math.round((5 + (universeIndex * 5) + (levelInUniverse * 3)) * 0.4),
+        star2: Math.round((5 + (universeIndex * 5) + (levelInUniverse * 3)) * 0.7),
+        star3: 5 + (universeIndex * 5) + (levelInUniverse * 3),
+        hasWalls: config.hasWalls && levelInUniverse >= 5, // Walls only from level 6+
+        hasPowerups: config.hasPowerups || levelInUniverse >= 4,
+        hasCollectibles: true,
+        collectibleRate: 0.6 + (universeIndex * 0.03) + (progressInUniverse * 0.08),
+        specialObstacle: levelInUniverse >= 3 ? config.specialObstacle : null // Special obstacles from level 4+
+      };
+      
+      levels.push(level);
+    }
+  });
+  
+  return levels;
+}
+
+export const LEVELS = generateLevels();
 
 // Helper function to get level by ID
 export function getLevelById(levelId) {
   return LEVELS.find(l => l.id === levelId) || LEVELS[0];
+}
+
+// Get levels for a specific universe
+export function getLevelsByUniverse(universeId) {
+  return LEVELS.filter(l => l.universeId === universeId);
 }

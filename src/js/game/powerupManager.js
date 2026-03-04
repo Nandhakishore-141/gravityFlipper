@@ -11,6 +11,7 @@ import * as dom from '../config/dom.js';
 let activePowerup = null;
 let powerupEndTime = 0;
 let shieldActive = false;
+let fastforwardActive = false;
 let effectOverlay = null;
 
 /**
@@ -20,6 +21,7 @@ export function initPowerupManager() {
   activePowerup = null;
   powerupEndTime = 0;
   shieldActive = false;
+  fastforwardActive = false;
   updateInventoryHUD();
   removeEffectOverlay();
 }
@@ -97,6 +99,9 @@ function activateSlowmo(powerup) {
   activePowerup = 'slowmo';
   powerupEndTime = performance.now() + powerup.duration;
   
+  // Add visual effect to player box
+  dom.box.classList.add('slowmo-active');
+  
   showEffectOverlay('slowmo');
   showPowerupMessage('SLOW MOTION!', 'success');
   
@@ -117,6 +122,9 @@ function activateSlowmo(powerup) {
 function activateShield(powerup) {
   shieldActive = true;
   
+  // Add visual effect to player box
+  dom.box.classList.add('shield-active');
+  
   showEffectOverlay('shield');
   showPowerupMessage('SHIELD ACTIVE!', 'success');
   
@@ -134,11 +142,19 @@ function activateShield(powerup) {
  * Activate fast forward (teleport)
  */
 function activateFastForward(powerup) {
+  // Add visual effect to player box
+  dom.box.classList.add('fastforward-active');
+  fastforwardActive = true;
+  
   showEffectOverlay('fastforward');
   showPowerupMessage('+150m FORWARD!', 'success');
   
-  // Remove effect after brief animation
-  setTimeout(() => removeEffectOverlay(), 500);
+  // Remove effect after animation
+  setTimeout(() => {
+    removeEffectOverlay();
+    dom.box.classList.remove('fastforward-active');
+    fastforwardActive = false;
+  }, 600);
   
   return {
     type: 'fastforward',
@@ -154,7 +170,8 @@ export function updatePowerups() {
   const now = performance.now();
   const effects = {
     speedMultiplier: 1.0,
-    shieldActive: shieldActive
+    shieldActive: shieldActive,
+    fastforwardActive: fastforwardActive
   };
   
   // Check slowmo duration
@@ -178,6 +195,9 @@ function deactivateSlowmo() {
   powerupEndTime = 0;
   removeEffectOverlay();
   
+  // Remove visual effect from player box
+  dom.box.classList.remove('slowmo-active');
+  
   const invItem = dom.invSlowmo?.closest('.inventory-item');
   if (invItem) invItem.classList.remove('active');
   
@@ -192,6 +212,9 @@ export function tryBlockWithShield() {
   if (shieldActive) {
     shieldActive = false;
     removeEffectOverlay();
+    
+    // Remove visual effect from player box
+    dom.box.classList.remove('shield-active');
     
     const invItem = dom.invShield?.closest('.inventory-item');
     if (invItem) invItem.classList.remove('active');
@@ -257,12 +280,23 @@ export function resetActivePowerups() {
   activePowerup = null;
   powerupEndTime = 0;
   shieldActive = false;
+  fastforwardActive = false;
   removeEffectOverlay();
+  
+  // Remove all powerup visual effects from player box
+  dom.box.classList.remove('shield-active', 'slowmo-active', 'fastforward-active');
   
   // Remove active states from inventory
   document.querySelectorAll('.inventory-item.active').forEach(el => {
     el.classList.remove('active');
   });
+}
+
+/**
+ * Check if fast forward is active (for straight line movement)
+ */
+export function isFastForwardActive() {
+  return fastforwardActive;
 }
 
 /**
